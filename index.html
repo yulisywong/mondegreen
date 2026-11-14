@@ -1,0 +1,2506 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>《粵語流行曲中的聲調與旋律配合》研究問卷與管理平台</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js CDN for Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+          },
+          colors: {
+            hku: {
+              navy: '#002147',
+              blue: '#0055A5',
+              gold: '#C5A059',
+              lightBg: '#F4F7FA',
+              cardBg: '#FFFFFF',
+              border: '#E2E8F0',
+              accent: '#0D9488'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', 'Noto Sans TC', sans-serif;
+      background-color: #F4F7FA;
+      color: #1E293B;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #F1F5F9; }
+    ::-webkit-scrollbar-thumb { background: #94A3B8; border-radius: 3px; }
+    .scale-rating-input:checked + label {
+      background-color: #0055A5;
+      color: #FFFFFF;
+      border-color: #0055A5;
+      font-weight: 700;
+      box-shadow: 0 4px 6px -1px rgba(0, 85, 165, 0.3);
+    }
+    .choice-pill-input:checked + label {
+      background-color: #002147;
+      color: #FFFFFF;
+      border-color: #002147;
+      font-weight: 600;
+    }
+    .multi-check-input:checked + label {
+      background-color: #EFF6FF;
+      color: #002147;
+      border-color: #0055A5;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased selection:bg-hku-blue selection:text-white">
+
+  <!-- ================= HEADER ================= -->
+  <header class="bg-hku-navy text-white shadow-md border-b-4 border-hku-gold sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold text-hku-gold border border-hku-gold/40 text-sm">
+          HKU
+        </div>
+        <div>
+          <h1 id="header-main-title" class="text-base md:text-lg font-bold tracking-wide">香港大學言語與聽覺科學研究</h1>
+          <p id="header-sub-title" class="text-xs text-slate-300">CEDU9001 - 粵語聲調與旋律配合研究</p>
+        </div>
+      </div>
+
+      <!-- Mode Switcher & Admin Lock -->
+      <div class="flex items-center gap-2">
+        <!-- Published Mode Indicator / Switch -->
+        <button id="btn-mode-survey" onclick="switchAppMode('survey')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-hku-blue text-white shadow transition flex items-center gap-1.5 border border-blue-400/30">
+          <i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i> 公開問卷 (Published)
+        </button>
+
+        <!-- Admin Controls (Only visible when unlocked) -->
+        <div id="admin-nav-group" class="hidden flex items-center gap-2">
+          <button id="btn-mode-editor" onclick="switchAppMode('editor')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:text-white transition flex items-center gap-1.5 border border-slate-700">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> 編輯問卷 (Edit)
+          </button>
+          <button id="btn-mode-dashboard" onclick="switchAppMode('dashboard')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:text-white transition flex items-center gap-1.5 border border-slate-700">
+            <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> 數據統計
+            <span id="response-count-badge" class="ml-1 px-1.5 py-0.5 bg-hku-gold text-hku-navy font-bold text-[10px] rounded-full">0</span>
+          </button>
+          <button onclick="copyShareLink()" title="複製公開問卷連結" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600/90 hover:bg-emerald-600 text-white transition flex items-center gap-1">
+            <i data-lucide="link" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">分享連結</span>
+          </button>
+          <button onclick="lockAdminMode()" title="鎖定並返回公開模式" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-rose-600/80 hover:bg-rose-600 text-white transition flex items-center gap-1">
+            <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+
+        <!-- Unlock Admin Button (Shown when locked) -->
+        <button id="btn-unlock-admin" onclick="openPasswordModal()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800/80 text-slate-300 hover:text-hku-gold hover:bg-slate-800 transition flex items-center gap-1.5 border border-slate-700">
+          <i data-lucide="key-round" class="w-3.5 h-3.5"></i> 管理員登入
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Progress Bar Container (Survey Mode) -->
+  <div id="survey-progress-container" class="w-full bg-slate-200 h-2 sticky top-[64px] z-30 shadow-inner">
+    <div id="progress-bar" class="bg-gradient-to-r from-hku-blue to-hku-gold h-2 transition-all duration-300 ease-out" style="width: 14.28%;"></div>
+  </div>
+
+  <!-- Custom Toast Notification -->
+  <div id="toast-box" class="fixed bottom-5 right-5 z-50 hidden transform transition-all duration-300">
+    <div class="bg-hku-navy text-white px-4 py-3 rounded-xl shadow-xl border border-hku-gold/40 flex items-center gap-2.5 text-xs font-medium">
+      <i data-lucide="info" class="w-4 h-4 text-hku-gold"></i>
+      <span id="toast-message">訊息提示</span>
+    </div>
+  </div>
+
+  <!-- ================= PASSWORD MODAL ================= -->
+  <div id="password-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="font-bold text-hku-navy text-base flex items-center gap-2">
+          <i data-lucide="shield-check" class="w-5 h-5 text-hku-blue"></i> 研究人員管理員驗證
+        </h3>
+        <button onclick="closePasswordModal()" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-600 leading-relaxed">
+        公開模式下受訪者無法修改問卷或查看統計結果。請輸入管理密碼以解鎖編輯器與數據儀表板：
+      </p>
+      <div>
+        <input type="password" id="admin-password-input" onkeyup="if(event.key==='Enter') verifyAdminPassword()" placeholder="請輸入管理密碼..." class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-hku-blue focus:border-hku-blue outline-none">
+        <p id="password-error-msg" class="text-xs text-red-500 mt-1.5 hidden">密碼錯誤，請重新輸入。</p>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closePasswordModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">取消</button>
+        <button onclick="verifyAdminPassword()" class="px-5 py-2 text-xs font-semibold bg-hku-blue text-white hover:bg-blue-700 rounded-xl shadow transition">解鎖進入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= CUSTOM CONFIRM MODAL ================= -->
+  <div id="confirm-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <h3 class="font-bold text-hku-navy text-base flex items-center gap-2">
+        <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-500"></i> 確認操作
+      </h3>
+      <p id="confirm-modal-text" class="text-xs text-slate-600 leading-relaxed whitespace-pre-line"></p>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeConfirmModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">取消</button>
+        <button id="confirm-modal-ok" class="px-5 py-2 text-xs font-semibold bg-rose-600 text-white hover:bg-rose-700 rounded-xl shadow transition">確定執行</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= VIEW 1: PUBLISHED SURVEY VIEW ================= -->
+  <main id="survey-view" class="max-w-4xl mx-auto w-full px-4 py-6 md:py-8 flex-grow">
+    
+    <!-- Survey Main Title Banner -->
+    <div class="bg-white p-6 md:p-7 rounded-2xl shadow-sm border-t-4 border-hku-navy border-x border-b border-slate-200 mb-6">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <span id="survey-badge-text" class="px-2.5 py-0.5 bg-hku-blue/10 text-hku-blue text-xs font-bold rounded-md">HKU CEDU9001 學術研究</span>
+        <span class="text-xs text-slate-400">匿名問卷調查</span>
+      </div>
+      <h1 id="survey-display-title" class="text-2xl md:text-3xl font-bold text-hku-navy">《粵語流行曲中的聲調與旋律配合》研究問卷</h1>
+      <p id="survey-display-subtitle" class="text-xs md:text-sm text-slate-500 mt-1.5">香港大學言語治療學生研究項目</p>
+    </div>
+
+    <!-- Step Badge -->
+    <div id="survey-top-meta" class="flex items-center justify-between mb-4">
+      <div class="text-xs font-semibold text-slate-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+        目前進度：第 <span id="current-step-num" class="text-hku-blue font-bold">1</span> / <span id="total-step-num">7</span> 部分
+      </div>
+      <span class="text-[11px] text-slate-400">HKU CEDU9001 匿名學術問卷</span>
+    </div>
+
+    <!-- Dynamic Step Navigation Tabs -->
+    <nav id="dynamic-step-tabs" class="hidden md:flex flex-wrap justify-between items-center gap-2 mb-6 bg-white p-2.5 rounded-xl shadow-sm border border-slate-200 text-xs font-medium text-slate-500">
+      <!-- Populated by JS -->
+    </nav>
+
+    <!-- Error Alert Banner -->
+    <div id="error-banner" class="hidden mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg text-red-700 text-sm flex items-center gap-3 shadow-sm">
+      <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0"></i>
+      <span id="error-message">請填妥本頁所有必要項目後再繼續。</span>
+    </div>
+
+    <!-- Dynamic Questionnaire Form -->
+    <form id="questionnaire-form" onsubmit="return false;" class="space-y-6">
+      <div id="dynamic-survey-sections">
+        <!-- Populated dynamically from surveySchema -->
+      </div>
+
+      <!-- Completion Screen -->
+      <section id="step-completion" class="hidden space-y-6">
+        <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 text-center space-y-6">
+          <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+            <i data-lucide="check-circle-2" class="w-10 h-10"></i>
+          </div>
+          <h2 class="text-2xl font-bold text-hku-navy">問卷已成功提交！</h2>
+          <p class="text-slate-600 text-sm max-w-md mx-auto">
+            非常感謝閣下參與本次《粵語流行曲中的聲調與旋律配合》研究。你的資料將為 CEDU9001 提供寶貴的學術數據。
+          </p>
+          <div class="flex flex-wrap gap-3 justify-center pt-2">
+            <button type="button" onclick="resetFormForNewResponse()" class="px-5 py-2.5 border border-slate-300 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-100 transition flex items-center gap-1.5">
+              <i data-lucide="rotate-ccw" class="w-4 h-4"></i> 重新填寫問卷
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Navigation Footer -->
+      <div id="nav-buttons-bar" class="flex justify-between items-center pt-4 border-t border-slate-200">
+        <button type="button" id="prev-btn" onclick="prevStep()" class="hidden px-5 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 transition flex items-center gap-2 shadow-sm">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i> 上一步
+        </button>
+        <div class="flex-grow"></div>
+        <button type="button" id="next-btn" onclick="nextStep()" class="px-6 py-2.5 bg-hku-blue text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition flex items-center gap-2 shadow-md hover:shadow-lg">
+          下一頁 <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+        <button type="button" id="submit-btn" onclick="submitForm()" class="hidden px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition flex items-center gap-2 shadow-md hover:shadow-lg">
+          提交問卷 <i data-lucide="send" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </form>
+  </main>
+
+  <!-- ================= VIEW 2: GOOGLE FORMS STYLE EDITOR (ADMIN ONLY) ================= -->
+  <main id="editor-view" class="hidden max-w-5xl mx-auto w-full px-4 py-6 md:py-8 flex-grow space-y-6">
+    <!-- Editor Top Banner -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 bg-amber-100 text-amber-800 text-xs font-bold rounded-md">編輯模式已解鎖</span>
+            <h2 class="text-xl font-bold text-hku-navy">問卷標題、結構與音訊編輯器</h2>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">自由修改問卷主標題與副標題、複製/新增/刪除整個部分 (Section) 與題目、更改題型或上傳音訊檔。</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="addNewSection()" class="px-3.5 py-2 bg-hku-navy text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition flex items-center gap-1.5 shadow">
+            <i data-lucide="folder-plus" class="w-4 h-4 text-hku-gold"></i> 新增問卷部分 (Section)
+          </button>
+          <button onclick="confirmResetSchema()" class="px-3.5 py-2 border border-slate-300 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-100 transition flex items-center gap-1.5">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> 還原預設題庫
+          </button>
+          <button onclick="switchAppMode('survey')" class="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 transition flex items-center gap-1.5 shadow">
+            <i data-lucide="eye" class="w-4 h-4"></i> 預覽公開問卷
+          </button>
+        </div>
+      </div>
+
+      <!-- Editable Main Survey Title & Metadata Box -->
+      <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div class="md:col-span-2">
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">問卷主標題 (Questionnaire Main Title)</label>
+          <input type="text" id="edit-survey-title" oninput="updateSurveyMeta('title', this.value)" class="w-full px-3.5 py-2 text-base font-bold text-hku-navy bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-hku-blue outline-none">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">副標題 / 研究說明 (Subtitle)</label>
+          <input type="text" id="edit-survey-subtitle" oninput="updateSurveyMeta('subtitle', this.value)" class="w-full px-3 py-1.5 text-xs text-slate-700 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-hku-blue outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">頂部機構名稱</label>
+            <input type="text" id="edit-header-title" oninput="updateSurveyMeta('headerTitle', this.value)" class="w-full px-3 py-1.5 text-xs text-slate-700 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-hku-blue outline-none">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">課程 / 項目標籤</label>
+            <input type="text" id="edit-badge-text" oninput="updateSurveyMeta('badgeText', this.value)" class="w-full px-3 py-1.5 text-xs text-slate-700 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-hku-blue outline-none">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sections Builder List -->
+    <div id="editor-sections-container" class="space-y-6">
+      <!-- Populated by renderEditor() -->
+    </div>
+  </main>
+
+  <!-- ================= VIEW 3: DATA & STATISTICS DASHBOARD (ADMIN ONLY) ================= -->
+  <main id="dashboard-view" class="hidden max-w-7xl mx-auto w-full px-4 py-6 md:py-8 flex-grow space-y-6">
+    
+    <!-- Dashboard Top Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-0.5 bg-hku-gold/20 text-hku-navy text-xs font-bold rounded-md">CEDU9001 Admin</span>
+          <h2 class="text-xl font-bold text-hku-navy">研究數據與統計分析 Dashboard</h2>
+        </div>
+        <p class="text-xs text-slate-500 mt-1">《粵語流行曲中的聲調與旋律配合》即時收集數據、視覺化圖表與匯出工具</p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="generateMockData()" class="px-3.5 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-semibold hover:bg-indigo-100 transition flex items-center gap-1.5">
+          <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i> 生成 15 筆測試數據
+        </button>
+        <button onclick="exportCSVData()" class="px-3.5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 transition flex items-center gap-1.5 shadow">
+          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> 匯出 CSV
+        </button>
+        <button onclick="exportJSONData()" class="px-3.5 py-2 bg-hku-navy text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition flex items-center gap-1.5 shadow">
+          <i data-lucide="download" class="w-4 h-4"></i> 匯出 JSON
+        </button>
+        <button onclick="confirmClearData()" class="px-3 py-2 border border-red-200 text-red-600 rounded-xl text-xs font-semibold hover:bg-red-50 transition flex items-center gap-1">
+          <i data-lucide="trash-2" class="w-4 h-4"></i> 清空數據
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Overview Metric Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 bg-blue-50 text-hku-blue rounded-xl flex items-center justify-center font-bold">
+          <i data-lucide="users" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500 font-medium">已收集問卷總數</p>
+          <p id="stat-total-responses" class="text-2xl font-bold text-slate-900">0</p>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center font-bold">
+          <i data-lucide="mic" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500 font-medium">平均粵語能力評分</p>
+          <p id="stat-avg-prof" class="text-2xl font-bold text-slate-900">0.0 / 7</p>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-bold">
+          <i data-lucide="check-check" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500 font-medium">歌詞辨認整體正確率</p>
+          <p id="stat-lyric-accuracy" class="text-2xl font-bold text-slate-900">0%</p>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center font-bold">
+          <i data-lucide="music" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500 font-medium">具音樂訓練比例</p>
+          <p id="stat-music-ratio" class="text-2xl font-bold text-slate-900">0%</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytics Charts Section 1: Demographics -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <h3 class="font-bold text-slate-800 text-sm mb-4 flex items-center gap-2">
+          <i data-lucide="pie-chart" class="w-4 h-4 text-hku-blue"></i> 年齡分佈 (Age)
+        </h3>
+        <div class="h-48 relative"><canvas id="chart-age"></canvas></div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <h3 class="font-bold text-slate-800 text-sm mb-4 flex items-center gap-2">
+          <i data-lucide="globe" class="w-4 h-4 text-hku-blue"></i> 母語分佈 (Language)
+        </h3>
+        <div class="h-48 relative"><canvas id="chart-language"></canvas></div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <h3 class="font-bold text-slate-800 text-sm mb-4 flex items-center gap-2">
+          <i data-lucide="award" class="w-4 h-4 text-hku-blue"></i> 音樂訓練 (Music Training)
+        </h3>
+        <div class="h-48 relative"><canvas id="chart-music"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Analytics Section 2: Match vs Mismatch Rating Comparison -->
+    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+      <div class="border-b border-slate-100 pb-3">
+        <h3 class="font-bold text-hku-navy text-base flex items-center gap-2">
+          <i data-lucide="git-compare" class="w-5 h-5 text-hku-blue"></i> 聆聽評估：Tone-Melody Match vs Mismatch 評分比較
+        </h3>
+        <p class="text-xs text-slate-500">比較「聲調配合 (Match)」與「聲調不配合 (Mismatch)」在 1–7 量表上的平均分數</p>
+      </div>
+      <div class="h-64 relative"><canvas id="chart-match-mismatch"></canvas></div>
+    </div>
+
+    <!-- Analytics Section 3: Forced Choice & Lyric Recognition -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+        <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+          <i data-lucide="split" class="w-4 h-4 text-hku-blue"></i> 版本偏好比例 (Forced-Choice Comparison)
+        </h3>
+        <div class="h-56 relative"><canvas id="chart-comparison"></canvas></div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+        <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+          <i data-lucide="target" class="w-4 h-4 text-hku-blue"></i> 歌詞辨認正確率比較 (%)
+        </h3>
+        <div class="h-56 relative"><canvas id="chart-lyric-match"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Analytics Section 3.5: Question-by-Question Breakdown -->
+    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+        <div>
+          <h3 class="font-bold text-hku-navy text-base flex items-center gap-2">
+            <i data-lucide="list-checks" class="w-5 h-5 text-hku-blue"></i> 逐題數據分析 (Question-by-Question Analysis)
+          </h3>
+          <p class="text-xs text-slate-500">按問卷部分與題目顯示所有題型的選項分佈、平均分、標準差、正確率與回答明細</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <label for="qbq-section-filter" class="text-xs font-semibold text-slate-600">篩選部分：</label>
+          <select id="qbq-section-filter" onchange="renderQuestionByQuestionAnalysis()" class="px-3 py-1.5 border border-slate-300 rounded-xl text-xs bg-white text-slate-700 focus:ring-2 focus:ring-hku-blue outline-none">
+            <option value="all">全部部分 (All Sections)</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="qbq-analysis-container" class="space-y-6">
+        <div class="text-center py-8 text-xs text-slate-400">尚無問卷提交數據，請先收集問卷或點擊上方「生成 15 筆測試數據」。</div>
+      </div>
+    </div>
+
+    <!-- Analytics Section 4: Raw Submissions Explorer -->
+    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+      <div class="flex flex-wrap justify-between items-center gap-3 border-b border-slate-100 pb-4">
+        <div>
+          <h3 class="font-bold text-hku-navy text-base flex items-center gap-2">
+            <i data-lucide="message-square-text" class="w-5 h-5 text-hku-blue"></i> 受訪者提交記錄與開放式意見
+          </h3>
+          <p class="text-xs text-slate-500">檢視所有已提交的問卷詳情與開放式回答</p>
+        </div>
+        <input type="text" id="feedback-search" oninput="filterQualitativeTable()" placeholder="搜尋關鍵字..." class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs w-48 focus:outline-none focus:ring-2 focus:ring-hku-blue">
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs text-left text-slate-700">
+          <thead class="bg-slate-50 text-slate-700 uppercase text-[10px] tracking-wider border-b border-slate-200">
+            <tr>
+              <th class="px-4 py-3">#</th>
+              <th class="px-4 py-3">背景資料</th>
+              <th class="px-4 py-3">開放題 1（自然歌曲特點）</th>
+              <th class="px-4 py-3">開放題 2（不自然之處）</th>
+              <th class="px-4 py-3">創作優先考量</th>
+              <th class="px-4 py-3">簡述原因 / 詳情</th>
+            </tr>
+          </thead>
+          <tbody id="qualitative-table-body" class="divide-y divide-slate-100">
+            <tr>
+              <td colspan="6" class="px-4 py-6 text-center text-slate-400">尚無問卷提交數據。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 text-slate-500 text-xs py-4 text-center">
+    <div class="max-w-6xl mx-auto px-4">
+      <p>© 2026 香港大學 Speech and Hearing Sciences - CEDU9001 研究小組</p>
+    </div>
+  </footer>
+
+  <!-- ================= APPLICATION LOGIC ================= -->
+  <script>
+    // ================= 1. AUDIO ENGINE (SUPPORTS UPLOADED FILES + SYNTH FALLBACK) =================
+    class CantoneseAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.currentAudioEl = null;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+      }
+      playAudio(audioDataUrl, isMatch = true, btn = null) {
+        if (this.currentAudioEl) {
+          this.currentAudioEl.pause();
+          this.currentAudioEl.currentTime = 0;
+        }
+
+        if (audioDataUrl) {
+          const audio = new Audio(audioDataUrl);
+          this.currentAudioEl = audio;
+          if (btn) {
+            const origHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="volume-2" class="w-4 h-4 animate-pulse"></i> 播放音訊檔中...`;
+            lucide.createIcons();
+            audio.onended = () => {
+              btn.disabled = false;
+              btn.innerHTML = origHtml;
+              lucide.createIcons();
+            };
+          }
+          audio.play().catch(() => {
+            showToast("音訊播放失敗，請檢查檔案格式。");
+            if (btn) btn.disabled = false;
+          });
+          return;
+        }
+
+        // Fallback Web Audio Synth Demo if no file uploaded yet
+        this.init();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+
+        const duration = 2.2;
+        if (btn) {
+          const origHtml = btn.innerHTML;
+          btn.disabled = true;
+          btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> 播放示範音訊...`;
+          lucide.createIcons();
+          setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+            lucide.createIcons();
+          }, duration * 1000);
+        }
+
+        const now = this.ctx.currentTime;
+        const freqs = isMatch ? [261.63, 293.66, 329.63, 392.00, 440.00] : [261.63, 311.13, 349.23, 415.30, 466.16];
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        const step = duration / freqs.length;
+        freqs.forEach((f, idx) => osc.frequency.setValueAtTime(f, now + idx * step));
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.3, now + 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + duration);
+      }
+    }
+    const audioEngine = new CantoneseAudioEngine();
+
+    // ================= 2. DEFAULT SURVEY SCHEMA (7 SECTIONS) =================
+    const DEFAULT_SURVEY_SCHEMA = [
+      {
+        id: "sec_1",
+        tabLabel: "同意書",
+        badge: "Part I",
+        title: "第一部分：研究同意書 (Consent Form)",
+        description: "我們是香港大學言語治療學生，現正為 CEDU9001 進行一項學術研究。\n本研究旨在探討粵語流行曲中的聲調與旋律配合，以及其對聽眾理解及聆聽體驗的影響。\n問卷約需 5–10 分鐘完成。所有資料將以匿名形式處理，並只作學術研究用途。參與本研究屬自願性質，閣下可於任何時間退出而毋須提供理由。",
+        questions: [
+          {
+            id: "consent",
+            type: "checkbox_single",
+            label: "本人已閱讀以上資料，明白本研究目的，並同意參與本研究。",
+            required: true
+          }
+        ]
+      },
+      {
+        id: "sec_2",
+        tabLabel: "背景",
+        badge: "Part II",
+        title: "第二部分：參與者背景資料 (Participant Background)",
+        description: "請提供以下基本背景資料，所有資料僅供統計分類之用。",
+        questions: [
+          { id: "age", type: "multiple_choice", label: "1. 年齡", options: ["18–20歲", "21–25歲", "26–30歲", "31歲或以上"], required: true },
+          { id: "gender", type: "multiple_choice", label: "2. 性別", options: ["男", "女", "不願透露", "其他"], required: true },
+          { id: "native_language", type: "multiple_choice", label: "3. 母語", options: ["粵語", "普通話", "英語", "其他"], required: true },
+          { id: "cantonese_proficiency", type: "likert", label: "4. 你認為自己的粵語水平：", minLabel: "1（非常差）", maxLabel: "7（母語水平）", required: true },
+          { id: "listen_frequency", type: "multiple_choice", label: "5. 你平均每星期收聽粵語流行曲的頻率：", options: ["幾乎不聽", "每月數次", "每週1–3次", "每週4–6次", "每日收聽"], required: true },
+          { id: "music_training", type: "multiple_choice", label: "6. 你曾否接受正式音樂訓練？", options: ["沒有", "1–3年", "4–6年", "7年或以上"], required: true },
+          { id: "sheet_music", type: "multiple_choice", label: "7. 你是否懂得閱讀樂譜？", options: ["是", "否"], required: true }
+        ]
+      },
+      {
+        id: "sec_3",
+        tabLabel: "聆聽評估",
+        badge: "Part III",
+        title: "第三部分：聆聽評估 (Listening Task)",
+        description: "指示：請佩戴耳機。你將會聽到數段粵語歌曲錄音。請根據你的第一印象回答問題。（建議配置 3 個 Tone-Melody Match 與 3 個 Tone-Melody Mismatch 並隨機排序）",
+        questions: [
+          { id: "audio_1", type: "audio_rating_group", label: "音訊 1", tag: "Tone-Melody Match", isMatch: true, audioData: null, audioFileName: "", required: true },
+          { id: "audio_2", type: "audio_rating_group", label: "音訊 2", tag: "Tone-Melody Mismatch", isMatch: false, audioData: null, audioFileName: "", required: true },
+          { id: "audio_3", type: "audio_rating_group", label: "音訊 3", tag: "Tone-Melody Match", isMatch: true, audioData: null, audioFileName: "", required: true },
+          { id: "audio_4", type: "audio_rating_group", label: "音訊 4", tag: "Tone-Melody Mismatch", isMatch: false, audioData: null, audioFileName: "", required: true },
+          { id: "audio_5", type: "audio_rating_group", label: "音訊 5", tag: "Tone-Melody Match", isMatch: true, audioData: null, audioFileName: "", required: true },
+          { id: "audio_6", type: "audio_rating_group", label: "音訊 6", tag: "Tone-Melody Mismatch", isMatch: false, audioData: null, audioFileName: "", required: true }
+        ]
+      },
+      {
+        id: "sec_4",
+        tabLabel: "版本比較",
+        badge: "Part IV",
+        title: "第四部分：版本比較 (Forced-Choice Comparison)",
+        description: "指示：你將會聽到兩個版本。A 和 B 只有旋律設定不同。請選擇你認為較佳的版本。",
+        questions: [
+          { id: "comp_1", type: "audio_comparison", label: "Comparison 1", audioDataA: null, audioNameA: "", audioDataB: null, audioNameB: "", required: true }
+        ]
+      },
+      {
+        id: "sec_5",
+        tabLabel: "歌詞辨認",
+        badge: "Part V",
+        title: "第五部分：歌詞辨認測驗 (Lyric Recognition Task)",
+        description: "本部分直接測試 Tone-Melody Mismatch 是否影響歌詞理解。請播放音訊並選出你聽到的歌詞。",
+        questions: [
+          { id: "lyric_7", type: "audio_multiple_choice", label: "音訊 7：請問你聽到以下哪一句歌詞？", options: ["風繼續吹", "東繼續吹", "通繼續吹", "空繼續吹"], correctAnswer: "風繼續吹", isMatch: false, audioData: null, audioFileName: "", required: true },
+          { id: "lyric_8", type: "audio_multiple_choice", label: "音訊 8：請問你聽到以下哪一句歌詞？", options: ["讓愛同行", "讓你同行", "讓我同行", "讓夢同行"], correctAnswer: "讓愛同行", isMatch: true, audioData: null, audioFileName: "", required: true },
+          { id: "lyric_9", type: "audio_multiple_choice", label: "音訊 9：請問你聽到以下哪一句歌詞？", options: ["歲月如歌", "碎月如歌", "睡月如歌", "隨月如歌"], correctAnswer: "歲月如歌", isMatch: false, audioData: null, audioFileName: "", required: true },
+          { id: "lyric_10", type: "audio_multiple_choice", label: "音訊 10：請問你聽到以下哪一句歌詞？", options: ["傾城之戀", "城城之戀", "清城之戀", "驚城之戀"], correctAnswer: "傾城之戀", isMatch: true, audioData: null, audioFileName: "", required: true },
+          { id: "lyric_11", type: "audio_multiple_choice", label: "音訊 11：請問你聽到以下哪一句歌詞？", options: ["光輝歲月", "廣輝歲月", "港輝歲月", "狂輝歲月"], correctAnswer: "光輝歲月", isMatch: false, audioData: null, audioFileName: "", required: true }
+        ]
+      },
+      {
+        id: "sec_6",
+        tabLabel: "看法",
+        badge: "Part VI",
+        title: "第六部分：對歌詞的看法 (Attitudes Toward Lyrics)",
+        description: "請根據以下陳述選擇同意程度（1 = 非常不同意，7 = 非常同意）。",
+        questions: [
+          { id: "attitude_1", type: "likert", label: "我平時聽歌時會留意歌詞內容。", minLabel: "1 = 非常不同意", maxLabel: "7 = 非常同意", required: true },
+          { id: "attitude_2", type: "likert", label: "我認為粵語歌曲應盡量保留原有聲調。", minLabel: "1 = 非常不同意", maxLabel: "7 = 非常同意", required: true },
+          { id: "attitude_3", type: "likert", label: "歌詞比旋律更重要。", minLabel: "1 = 非常不同意", maxLabel: "7 = 非常同意", required: true },
+          { id: "attitude_4", type: "likert", label: "準確的粵語發音會提升歌曲質素。", minLabel: "1 = 非常不同意", maxLabel: "7 = 非常同意", required: true },
+          { id: "attitude_5", type: "likert", label: "即使聲調改變，只要旋律好聽亦沒有問題。", minLabel: "1 = 非常不同意", maxLabel: "7 = 非常同意", required: true },
+          { id: "attitude_6", type: "likert", label: "聲調與旋律不一致時，我會覺得不自然。", minLabel: "1 = 非常不同意", maxLabel: "7 = 非常同意", required: true }
+        ]
+      },
+      {
+        id: "sec_7",
+        tabLabel: "開放問題",
+        badge: "Part VII",
+        title: "第七部分：開放式問題 (Open-ended Questions)",
+        description: "請分享你對粵語流行曲聲調與旋律配合的看法。",
+        questions: [
+          { id: "open_q1", type: "open_text", label: "1. 你認為一首自然的粵語流行曲應具備什麼特點？", placeholder: "請填寫你的看法...", required: true },
+          { id: "open_q2", type: "open_text", label: "2. 在剛才的錄音中，你有否留意到任何不自然的地方？", placeholder: "例如哪一段音訊、哪個字的發音或聲調感到特別奇怪...", required: true },
+          { id: "creation_priority", type: "multiple_choice", label: "3. 你認為歌曲創作時應優先考慮：", options: ["歌詞聲調", "音樂旋律", "兩者同樣重要"], required: true },
+          { id: "priority_reason", type: "open_text", label: "請簡述原因：", placeholder: "簡述原因...", required: true }
+        ]
+      }
+    ];
+
+    // ================= 3. STATE & STORAGE =================
+    const DEFAULT_SURVEY_META = {
+      title: "《粵語流行曲中的聲調與旋律配合》研究問卷",
+      subtitle: "香港大學言語治療學生研究項目",
+      headerTitle: "香港大學言語與聽覺科學研究",
+      badgeText: "CEDU9001 - 粵語聲調與旋律配合研究"
+    };
+
+    let surveyMeta = { ...DEFAULT_SURVEY_META };
+    try {
+      const savedMeta = localStorage.getItem('hku_cedu9001_meta');
+      if (savedMeta) surveyMeta = { ...DEFAULT_SURVEY_META, ...JSON.parse(savedMeta) };
+    } catch (e) {}
+
+    let surveySchema = [];
+    try {
+      const savedSchema = localStorage.getItem('hku_cedu9001_schema');
+      surveySchema = savedSchema ? JSON.parse(savedSchema) : JSON.parse(JSON.stringify(DEFAULT_SURVEY_SCHEMA));
+    } catch (e) {
+      surveySchema = JSON.parse(JSON.stringify(DEFAULT_SURVEY_SCHEMA));
+    }
+
+    let responsesDatabase = [];
+    try {
+      responsesDatabase = JSON.parse(localStorage.getItem('hku_cantonese_responses') || '[]');
+    } catch (e) {
+      responsesDatabase = [];
+    }
+
+    let isAdminUnlocked = sessionStorage.getItem('hku_admin_unlocked') === 'true';
+    let currentStep = 0;
+    let formAnswers = {};
+
+    function applySurveyMetaToDOM() {
+      document.title = surveyMeta.title;
+      const headerMain = document.getElementById('header-main-title');
+      const headerSub = document.getElementById('header-sub-title');
+      const surveyTitle = document.getElementById('survey-display-title');
+      const surveySubtitle = document.getElementById('survey-display-subtitle');
+      const surveyBadge = document.getElementById('survey-badge-text');
+
+      if (headerMain) headerMain.textContent = surveyMeta.headerTitle;
+      if (headerSub) headerSub.textContent = surveyMeta.badgeText;
+      if (surveyTitle) surveyTitle.textContent = surveyMeta.title;
+      if (surveySubtitle) surveySubtitle.textContent = surveyMeta.subtitle;
+      if (surveyBadge) surveyBadge.textContent = surveyMeta.badgeText;
+    }
+
+    function updateSurveyMeta(field, val) {
+      surveyMeta[field] = val;
+      try {
+        localStorage.setItem('hku_cedu9001_meta', JSON.stringify(surveyMeta));
+      } catch (e) {}
+      applySurveyMetaToDOM();
+    }
+
+    function saveSchemaToStorage() {
+      try {
+        localStorage.setItem('hku_cedu9001_schema', JSON.stringify(surveySchema));
+      } catch (e) {
+        showToast("警告：音訊檔案過大，瀏覽器本地儲存空間已滿，建議使用較短的 MP3 剪輯。");
+      }
+    }
+
+    // ================= 4. ADMIN PASSWORD & URL LINK HANDLING =================
+    function checkUrlParameters() {
+      const params = new URLSearchParams(window.location.search);
+      const modeParam = params.get('mode') || params.get('edit');
+      if (modeParam === 'admin' || modeParam === 'edit' || modeParam === '1') {
+        if (isAdminUnlocked) {
+          switchAppMode('editor');
+        } else {
+          openPasswordModal();
+        }
+      }
+    }
+
+    function openPasswordModal() {
+      document.getElementById('password-modal').classList.remove('hidden');
+      const input = document.getElementById('admin-password-input');
+      input.value = '';
+      document.getElementById('password-error-msg').classList.add('hidden');
+      setTimeout(() => input.focus(), 100);
+    }
+
+    function closePasswordModal() {
+      document.getElementById('password-modal').classList.add('hidden');
+    }
+
+    function verifyAdminPassword() {
+      const val = document.getElementById('admin-password-input').value;
+      if (val === 'CEDU9001') {
+        isAdminUnlocked = true;
+        sessionStorage.setItem('hku_admin_unlocked', 'true');
+        closePasswordModal();
+        updateAdminUIState();
+        switchAppMode('editor');
+        showToast("管理員驗證成功！已解鎖編輯與數據統計功能。");
+      } else {
+        document.getElementById('password-error-msg').classList.remove('hidden');
+      }
+    }
+
+    function lockAdminMode() {
+      isAdminUnlocked = false;
+      sessionStorage.removeItem('hku_admin_unlocked');
+      updateAdminUIState();
+      switchAppMode('survey');
+      showToast("已鎖定管理功能，目前為公開問卷模式。");
+    }
+
+    function updateAdminUIState() {
+      const adminGroup = document.getElementById('admin-nav-group');
+      const unlockBtn = document.getElementById('btn-unlock-admin');
+      if (isAdminUnlocked) {
+        adminGroup.classList.remove('hidden');
+        unlockBtn.classList.add('hidden');
+      } else {
+        adminGroup.classList.add('hidden');
+        unlockBtn.classList.remove('hidden');
+      }
+    }
+
+    function copyShareLink() {
+      const url = new URL(window.location.href);
+      url.search = '';
+      const tempInput = document.createElement('input');
+      tempInput.value = url.toString();
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+      showToast("已複製公開問卷連結！受訪者開啟後僅可填寫問卷。");
+    }
+
+    function switchAppMode(mode) {
+      if ((mode === 'editor' || mode === 'dashboard') && !isAdminUnlocked) {
+        openPasswordModal();
+        return;
+      }
+
+      const surveyView = document.getElementById('survey-view');
+      const editorView = document.getElementById('editor-view');
+      const dashboardView = document.getElementById('dashboard-view');
+      const progressBar = document.getElementById('survey-progress-container');
+
+      const btnSurvey = document.getElementById('btn-mode-survey');
+      const btnEditor = document.getElementById('btn-mode-editor');
+      const btnDash = document.getElementById('btn-mode-dashboard');
+
+      const inactiveClass = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:text-white transition flex items-center gap-1.5 border border-slate-700";
+      const activeClass = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-hku-blue text-white shadow transition flex items-center gap-1.5 border border-blue-400/30";
+
+      surveyView.classList.add('hidden');
+      editorView.classList.add('hidden');
+      dashboardView.classList.add('hidden');
+      progressBar.classList.add('hidden');
+
+      btnSurvey.className = inactiveClass;
+      btnEditor.className = inactiveClass;
+      btnDash.className = inactiveClass;
+
+      if (mode === 'survey') {
+        surveyView.classList.remove('hidden');
+        progressBar.classList.remove('hidden');
+        btnSurvey.className = activeClass;
+        renderSurveyCurrentStep();
+      } else if (mode === 'editor') {
+        editorView.classList.remove('hidden');
+        btnEditor.className = activeClass;
+        renderEditor();
+      } else if (mode === 'dashboard') {
+        dashboardView.classList.remove('hidden');
+        btnDash.className = activeClass;
+        refreshDashboardAnalytics();
+      }
+      lucide.createIcons();
+    }
+
+    // ================= 5. PUBLISHED SURVEY RENDERER & NAVIGATION =================
+    function renderSurveyTabs() {
+      const nav = document.getElementById('dynamic-step-tabs');
+      nav.innerHTML = surveySchema.map((sec, idx) => {
+        const isCurrent = idx === currentStep;
+        const isDone = idx < currentStep;
+        const textClass = isCurrent ? "font-semibold text-hku-blue" : (isDone ? "font-medium text-emerald-600" : "text-slate-400");
+        const badgeClass = isCurrent ? "bg-hku-blue text-white" : (isDone ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600");
+        return `
+          <div class="flex items-center gap-1.5 ${textClass}">
+            <span class="w-5 h-5 rounded-full ${badgeClass} flex items-center justify-center text-[10px]">${idx + 1}</span>
+            <span>${escapeHtml(sec.tabLabel || `第${idx+1}部分`)}</span>
+          </div>
+          ${idx < surveySchema.length - 1 ? '<div class="w-3 h-[1px] bg-slate-200"></div>' : ''}
+        `;
+      }).join('');
+    }
+
+    function renderSurveyCurrentStep() {
+      if (surveySchema.length === 0) return;
+      if (currentStep >= surveySchema.length) currentStep = surveySchema.length - 1;
+
+      document.getElementById('step-completion').classList.add('hidden');
+      document.getElementById('nav-buttons-bar').classList.remove('hidden');
+      document.getElementById('survey-top-meta').classList.remove('hidden');
+
+      document.getElementById('current-step-num').textContent = currentStep + 1;
+      document.getElementById('total-step-num').textContent = surveySchema.length;
+      const pct = ((currentStep + 1) / surveySchema.length) * 100;
+      document.getElementById('progress-bar').style.width = `${pct}%`;
+
+      renderSurveyTabs();
+
+      const sec = surveySchema[currentStep];
+      const container = document.getElementById('dynamic-survey-sections');
+      const formattedDesc = escapeHtml(sec.description || '').replace(/\n/g, '<br>');
+
+      let questionsHtml = sec.questions.map((q, qIdx) => renderQuestionHTML(q, qIdx)).join('');
+
+      container.innerHTML = `
+        <section class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+          <div class="border-b border-slate-100 pb-4">
+            <span class="text-xs font-bold text-hku-blue uppercase tracking-wider">${escapeHtml(sec.badge || `Part ${currentStep + 1}`)}</span>
+            <h2 class="text-xl md:text-2xl font-bold text-hku-navy mt-1">${escapeHtml(sec.title)}</h2>
+          </div>
+          ${sec.description ? `
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 text-slate-700 text-sm leading-relaxed">
+              ${formattedDesc}
+            </div>
+          ` : ''}
+          <div class="space-y-6">
+            ${questionsHtml}
+          </div>
+        </section>
+      `;
+
+      restoreStepAnswers(sec);
+
+      document.getElementById('prev-btn').classList.toggle('hidden', currentStep === 0);
+      document.getElementById('next-btn').classList.toggle('hidden', currentStep === surveySchema.length - 1);
+      document.getElementById('submit-btn').classList.toggle('hidden', currentStep !== surveySchema.length - 1);
+
+      hideError();
+      lucide.createIcons();
+    }
+
+    function renderQuestionHTML(q) {
+      const reqStar = q.required ? '<span class="text-red-500">*</span>' : '';
+
+      if (q.type === 'checkbox_single') {
+        return `
+          <div class="pt-2">
+            <label for="input-${q.id}" class="flex items-start gap-3 cursor-pointer group p-3.5 rounded-xl bg-blue-50/40 border border-blue-100 hover:bg-blue-50/80 transition">
+              <input type="checkbox" id="input-${q.id}" name="${q.id}" class="mt-0.5 w-5 h-5 text-hku-blue rounded border-slate-300 focus:ring-hku-blue cursor-pointer">
+              <span class="text-slate-800 text-sm md:text-base font-medium">${escapeHtml(q.label)} ${reqStar}</span>
+            </label>
+          </div>
+        `;
+      }
+
+      if (q.type === 'multiple_choice') {
+        const opts = q.options || [];
+        const cols = opts.length <= 2 ? 'grid-cols-2 max-w-md' : (opts.length === 3 ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2 md:grid-cols-4');
+        return `
+          <div class="space-y-2.5">
+            <label class="block font-semibold text-slate-800 text-sm md:text-base">${escapeHtml(q.label)} ${reqStar}</label>
+            <div class="grid ${cols} gap-2.5">
+              ${opts.map((opt, idx) => `
+                <div>
+                  <input type="radio" id="${q.id}-opt-${idx}" name="${q.id}" value="${escapeHtml(opt)}" class="hidden choice-pill-input">
+                  <label for="${q.id}-opt-${idx}" class="block w-full text-center py-2.5 px-3 rounded-xl border border-slate-200 hover:border-hku-blue cursor-pointer text-xs md:text-sm font-medium transition">${escapeHtml(opt)}</label>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      if (q.type === 'checkboxes') {
+        const opts = q.options || [];
+        return `
+          <div class="space-y-2.5">
+            <label class="block font-semibold text-slate-800 text-sm md:text-base">${escapeHtml(q.label)} ${reqStar} <span class="text-xs font-normal text-slate-400">（可選多項）</span></label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              ${opts.map((opt, idx) => `
+                <div>
+                  <input type="checkbox" id="${q.id}-chk-${idx}" name="${q.id}" value="${escapeHtml(opt)}" class="hidden multi-check-input">
+                  <label for="${q.id}-chk-${idx}" class="flex items-center gap-2.5 w-full py-2.5 px-3.5 rounded-xl border border-slate-200 hover:border-hku-blue cursor-pointer text-xs md:text-sm font-medium transition">
+                    <span class="w-4 h-4 rounded border border-slate-400 flex items-center justify-center text-[10px]">✓</span>
+                    <span>${escapeHtml(opt)}</span>
+                  </label>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      if (q.type === 'dropdown') {
+        const opts = q.options || [];
+        return `
+          <div class="space-y-2">
+            <label for="input-${q.id}" class="block font-semibold text-slate-800 text-sm md:text-base">${escapeHtml(q.label)} ${reqStar}</label>
+            <div class="relative max-w-md">
+              <select id="input-${q.id}" name="${q.id}" class="w-full appearance-none px-4 py-2.5 pr-10 bg-white border border-slate-300 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-hku-blue focus:border-hku-blue outline-none transition cursor-pointer">
+                <option value="">-- 請選擇一個選項 --</option>
+                ${opts.map(opt => `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`).join('')}
+              </select>
+              <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            </div>
+          </div>
+        `;
+      }
+
+      if (q.type === 'short_text') {
+        return `
+          <div class="space-y-2">
+            <label for="input-${q.id}" class="block font-semibold text-slate-800 text-sm md:text-base">${escapeHtml(q.label)} ${reqStar}</label>
+            <input type="text" id="input-${q.id}" name="${q.id}" class="w-full max-w-xl px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-hku-blue focus:border-hku-blue outline-none text-sm transition" placeholder="${escapeHtml(q.placeholder || '請輸入簡短回答...')}">
+          </div>
+        `;
+      }
+
+      if (q.type === 'likert') {
+        return `
+          <div class="border border-slate-200/80 rounded-xl p-4 bg-white space-y-2.5">
+            <label class="block font-semibold text-slate-800 text-sm md:text-base">${escapeHtml(q.label)} ${reqStar}</label>
+            <div class="flex justify-between text-xs text-slate-500 px-1">
+              <span>${escapeHtml(q.minLabel || '1 (非常不同意)')}</span>
+              <span>${escapeHtml(q.maxLabel || '7 (非常同意)')}</span>
+            </div>
+            <div class="grid grid-cols-7 gap-1.5 md:gap-2.5">
+              ${[1,2,3,4,5,6,7].map(num => `
+                <div class="text-center">
+                  <input type="radio" id="${q.id}-scale-${num}" name="${q.id}" value="${num}" class="hidden scale-rating-input">
+                  <label for="${q.id}-scale-${num}" class="block py-2.5 rounded-xl border border-slate-200 cursor-pointer text-xs md:text-sm font-semibold transition">${num}</label>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      if (q.type === 'open_text') {
+        return `
+          <div class="space-y-2">
+            <label for="input-${q.id}" class="block font-semibold text-slate-800 text-sm md:text-base">${escapeHtml(q.label)} ${reqStar}</label>
+            <textarea id="input-${q.id}" name="${q.id}" rows="3" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-hku-blue focus:border-hku-blue outline-none text-sm transition" placeholder="${escapeHtml(q.placeholder || '請輸入你的回答...')}"></textarea>
+          </div>
+        `;
+      }
+
+      if (q.type === 'audio_rating_group') {
+        const subQs = [
+          { key: 'naturalness', label: '1. 這段歌曲聽起來自然嗎？', min: '1 = 非常不自然', max: '7 = 非常自然' },
+          { key: 'fit', label: '2. 歌詞與旋律配合程度如何？', min: '1 = 完全不配合', max: '7 = 非常配合' },
+          { key: 'understanding', label: '3. 歌詞容易理解嗎？', min: '1 = 非常難理解', max: '7 = 非常容易理解' },
+          { key: 'pronunciation', label: '4. 歌手的粵語發音自然嗎？', min: '1 = 非常不自然', max: '7 = 非常自然' }
+        ];
+        return `
+          <div class="border border-slate-200 rounded-2xl p-5 bg-slate-50/70 space-y-5">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+              <div class="flex items-center gap-2.5">
+                <span class="font-bold text-hku-navy text-base md:text-lg">${escapeHtml(q.label)}</span>
+                ${q.audioFileName ? `<span class="text-[11px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-medium">已載入音訊檔</span>` : ''}
+              </div>
+              <button type="button" onclick="playQuestionAudio('${q.id}', 'single', this)" class="px-4 py-2 bg-hku-blue text-white text-xs font-semibold rounded-xl hover:bg-blue-700 transition flex items-center gap-2 shadow">
+                <i data-lucide="play" class="w-4 h-4"></i> 播放音訊 (Audio Clip)
+              </button>
+            </div>
+            <div class="space-y-4">
+              ${subQs.map(sq => `
+                <div>
+                  <div class="flex justify-between text-xs font-semibold text-slate-700 mb-1.5">
+                    <span>${sq.label} ${reqStar}</span>
+                    <span class="text-slate-400 hidden sm:inline">${sq.min} → ${sq.max}</span>
+                  </div>
+                  <div class="grid grid-cols-7 gap-1 md:gap-2">
+                    ${[1,2,3,4,5,6,7].map(num => `
+                      <div class="text-center">
+                        <input type="radio" id="${q.id}-${sq.key}-${num}" name="${q.id}_${sq.key}" value="${num}" class="hidden scale-rating-input">
+                        <label for="${q.id}-${sq.key}-${num}" class="block py-2 rounded-lg border border-slate-200 bg-white cursor-pointer text-xs font-semibold transition">${num}</label>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      if (q.type === 'audio_comparison') {
+        const compQs = [
+          { key: "natural", label: "哪個版本較自然？" },
+          { key: "intelligible", label: "哪個版本較容易理解歌詞？" },
+          { key: "fit", label: "哪個版本的歌詞與旋律較配合？" },
+          { key: "professional", label: "哪個版本比較像專業粵語流行曲？" }
+        ];
+        return `
+          <div class="border border-slate-200 rounded-2xl p-5 bg-slate-50/70 space-y-5">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
+              <span class="font-bold text-hku-navy text-base md:text-lg">${escapeHtml(q.label)}</span>
+              <div class="flex flex-wrap items-center gap-2.5">
+                <button type="button" onclick="playQuestionAudio('${q.id}', 'A', this)" class="px-4 py-2 bg-hku-navy text-white text-xs font-semibold rounded-xl hover:bg-slate-800 transition flex items-center gap-2 shadow">
+                  <i data-lucide="play-circle" class="w-4 h-4 text-hku-gold"></i> 播放 Audio A
+                </button>
+                <button type="button" onclick="playQuestionAudio('${q.id}', 'B', this)" class="px-4 py-2 bg-slate-700 text-white text-xs font-semibold rounded-xl hover:bg-slate-800 transition flex items-center gap-2 shadow">
+                  <i data-lucide="play-circle" class="w-4 h-4 text-rose-400"></i> 播放 Audio B
+                </button>
+              </div>
+            </div>
+            <div class="space-y-4">
+              ${compQs.map(cq => `
+                <div>
+                  <label class="block font-semibold text-slate-800 text-xs md:text-sm mb-2">${cq.label} ${reqStar}</label>
+                  <div class="grid grid-cols-3 gap-2.5">
+                    ${['A', 'B', '沒有明顯差異'].map((opt, idx) => `
+                      <div>
+                        <input type="radio" id="${q.id}-${cq.key}-${idx}" name="${q.id}_${cq.key}" value="${opt}" class="hidden choice-pill-input">
+                        <label for="${q.id}-${cq.key}-${idx}" class="block w-full text-center py-2 px-3 rounded-xl border border-slate-200 bg-white hover:border-hku-blue cursor-pointer text-xs font-semibold transition">${opt === 'A' || opt === 'B' ? '版本 ' + opt : opt}</label>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      if (q.type === 'audio_multiple_choice') {
+        const opts = q.options || [];
+        return `
+          <div class="border border-slate-200 rounded-2xl p-5 bg-slate-50/70 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+              <span class="font-bold text-hku-navy text-sm md:text-base">${escapeHtml(q.label)} ${reqStar}</span>
+              <button type="button" onclick="playQuestionAudio('${q.id}', 'single', this)" class="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-xl hover:bg-indigo-700 transition flex items-center gap-2 shadow">
+                <i data-lucide="volume-2" class="w-4 h-4"></i> 播放音訊
+              </button>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+              ${opts.map((opt, idx) => `
+                <div>
+                  <input type="radio" id="${q.id}-opt-${idx}" name="${q.id}" value="${escapeHtml(opt)}" class="hidden choice-pill-input">
+                  <label for="${q.id}-opt-${idx}" class="block w-full text-center py-3 px-3 rounded-xl border border-slate-200 bg-white hover:border-hku-blue cursor-pointer text-xs md:text-sm font-semibold transition">${escapeHtml(opt)}</label>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      return '';
+    }
+
+    function playQuestionAudio(qId, slot, btn) {
+      let targetQ = null;
+      for (const sec of surveySchema) {
+        const found = sec.questions.find(q => q.id === qId);
+        if (found) { targetQ = found; break; }
+      }
+      if (!targetQ) return;
+
+      if (slot === 'A') {
+        audioEngine.playAudio(targetQ.audioDataA, true, btn);
+      } else if (slot === 'B') {
+        audioEngine.playAudio(targetQ.audioDataB, false, btn);
+      } else {
+        audioEngine.playAudio(targetQ.audioData, targetQ.isMatch !== false, btn);
+      }
+    }
+
+    function captureCurrentStepAnswers() {
+      const sec = surveySchema[currentStep];
+      if (!sec) return;
+      sec.questions.forEach(q => {
+        if (q.type === 'checkbox_single') {
+          const el = document.getElementById(`input-${q.id}`);
+          if (el) formAnswers[q.id] = el.checked;
+        } else if (q.type === 'checkboxes') {
+          const checked = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(el => el.value);
+          formAnswers[q.id] = checked;
+        } else if (q.type === 'dropdown' || q.type === 'short_text' || q.type === 'open_text') {
+          const el = document.getElementById(`input-${q.id}`);
+          if (el) formAnswers[q.id] = el.value.trim();
+        } else if (q.type === 'audio_rating_group') {
+          ['naturalness', 'fit', 'understanding', 'pronunciation'].forEach(sub => {
+            const val = getRadioValue(`${q.id}_${sub}`);
+            if (val) formAnswers[`${q.id}_${sub}`] = parseInt(val);
+          });
+        } else if (q.type === 'audio_comparison') {
+          ['natural', 'intelligible', 'fit', 'professional'].forEach(sub => {
+            const val = getRadioValue(`${q.id}_${sub}`);
+            if (val) formAnswers[`${q.id}_${sub}`] = val;
+          });
+        } else {
+          const val = getRadioValue(q.id);
+          if (val) formAnswers[q.id] = q.type === 'likert' ? parseInt(val) : val;
+        }
+      });
+    }
+
+    function restoreStepAnswers(sec) {
+      sec.questions.forEach(q => {
+        if (q.type === 'checkbox_single') {
+          const el = document.getElementById(`input-${q.id}`);
+          if (el && formAnswers[q.id]) el.checked = true;
+        } else if (q.type === 'checkboxes') {
+          const savedArr = formAnswers[q.id] || [];
+          document.querySelectorAll(`input[name="${q.id}"]`).forEach(cb => {
+            cb.checked = savedArr.includes(cb.value);
+          });
+        } else if (q.type === 'dropdown' || q.type === 'short_text' || q.type === 'open_text') {
+          const el = document.getElementById(`input-${q.id}`);
+          if (el && formAnswers[q.id]) el.value = formAnswers[q.id];
+        } else if (q.type === 'audio_rating_group') {
+          ['naturalness', 'fit', 'understanding', 'pronunciation'].forEach(sub => {
+            const saved = formAnswers[`${q.id}_${sub}`];
+            if (saved) setRadioValue(`${q.id}_${sub}`, saved);
+          });
+        } else if (q.type === 'audio_comparison') {
+          ['natural', 'intelligible', 'fit', 'professional'].forEach(sub => {
+            const saved = formAnswers[`${q.id}_${sub}`];
+            if (saved) setRadioValue(`${q.id}_${sub}`, saved);
+          });
+        } else {
+          const saved = formAnswers[q.id];
+          if (saved !== undefined) setRadioValue(q.id, saved);
+        }
+      });
+    }
+
+    function validateCurrentStep() {
+      captureCurrentStepAnswers();
+      const sec = surveySchema[currentStep];
+      if (!sec) return true;
+
+      for (const q of sec.questions) {
+        if (!q.required) continue;
+        if (q.type === 'checkbox_single') {
+          if (!formAnswers[q.id]) return false;
+        } else if (q.type === 'checkboxes') {
+          if (!Array.isArray(formAnswers[q.id]) || formAnswers[q.id].length === 0) return false;
+        } else if (q.type === 'dropdown' || q.type === 'short_text' || q.type === 'open_text') {
+          if (!formAnswers[q.id] || formAnswers[q.id].trim() === '') return false;
+        } else if (q.type === 'audio_rating_group') {
+          if (!formAnswers[`${q.id}_naturalness`] || !formAnswers[`${q.id}_fit`] ||
+              !formAnswers[`${q.id}_understanding`] || !formAnswers[`${q.id}_pronunciation`]) return false;
+        } else if (q.type === 'audio_comparison') {
+          if (!formAnswers[`${q.id}_natural`] || !formAnswers[`${q.id}_intelligible`] ||
+              !formAnswers[`${q.id}_fit`] || !formAnswers[`${q.id}_professional`]) return false;
+        } else {
+          if (formAnswers[q.id] === undefined || formAnswers[q.id] === null || formAnswers[q.id] === '') return false;
+        }
+      }
+      return true;
+    }
+
+    function nextStep() {
+      if (!validateCurrentStep()) {
+        showError('請填妥本頁所有必填問題後再繼續。');
+        return;
+      }
+      if (currentStep < surveySchema.length - 1) {
+        currentStep++;
+        renderSurveyCurrentStep();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function prevStep() {
+      captureCurrentStepAnswers();
+      if (currentStep > 0) {
+        currentStep--;
+        renderSurveyCurrentStep();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function submitForm() {
+      if (!validateCurrentStep()) {
+        showError('請填妥本頁所有必填問題後再提交。');
+        return;
+      }
+
+      const listeningRecords = [];
+      const lyricRecords = [];
+      const attitudeRecords = [];
+
+      surveySchema.forEach(sec => {
+        sec.questions.forEach(q => {
+          if (q.type === 'audio_rating_group') {
+            listeningRecords.push({
+              audio_id: q.id,
+              label: q.label,
+              isMatch: q.isMatch !== false,
+              naturalness: formAnswers[`${q.id}_naturalness`] || 4,
+              fit: formAnswers[`${q.id}_fit`] || 4,
+              understanding: formAnswers[`${q.id}_understanding`] || 4,
+              pronunciation: formAnswers[`${q.id}_pronunciation`] || 4
+            });
+          } else if (q.type === 'audio_multiple_choice') {
+            const selected = formAnswers[q.id] || '';
+            lyricRecords.push({
+              audio_id: q.id,
+              isMatch: q.isMatch !== false,
+              selected: selected,
+              isCorrect: q.correctAnswer ? (selected === q.correctAnswer) : true
+            });
+          } else if (q.type === 'likert' && q.id.startsWith('attitude_')) {
+            attitudeRecords.push({
+              statement_id: q.id,
+              score: formAnswers[q.id] || 4
+            });
+          }
+        });
+      });
+
+      const payload = {
+        timestamp: new Date().toISOString(),
+        age: formAnswers.age || '未填寫',
+        gender: formAnswers.gender || '未填寫',
+        native_language: formAnswers.native_language || '未填寫',
+        cantonese_proficiency: parseInt(formAnswers.cantonese_proficiency) || 5,
+        listen_frequency: formAnswers.listen_frequency || '未填寫',
+        music_training: formAnswers.music_training || '沒有',
+        sheet_music: formAnswers.sheet_music || '否',
+        part3_listening: listeningRecords,
+        part4_comparison: {
+          natural: formAnswers.comp_1_natural || 'A',
+          intelligible: formAnswers.comp_1_intelligible || 'A',
+          fit: formAnswers.comp_1_fit || 'A',
+          professional: formAnswers.comp_1_professional || 'A'
+        },
+        part5_lyrics: lyricRecords,
+        part6_attitudes: attitudeRecords,
+        part7_open: {
+          q1_characteristics: formAnswers.open_q1 || '',
+          q2_unnatural_notes: formAnswers.open_q2 || '',
+          priority: formAnswers.creation_priority || '未選擇',
+          priority_reason: formAnswers.priority_reason || ''
+        },
+        raw_answers: { ...formAnswers }
+      };
+
+      responsesDatabase.push(payload);
+      localStorage.setItem('hku_cantonese_responses', JSON.stringify(responsesDatabase));
+      updateResponseBadgeCount();
+
+      document.getElementById('dynamic-survey-sections').innerHTML = '';
+      document.getElementById('step-completion').classList.remove('hidden');
+      document.getElementById('nav-buttons-bar').classList.add('hidden');
+      document.getElementById('survey-top-meta').classList.add('hidden');
+      document.getElementById('progress-bar').style.width = '100%';
+      lucide.createIcons();
+    }
+
+    function resetFormForNewResponse() {
+      formAnswers = {};
+      currentStep = 0;
+      renderSurveyCurrentStep();
+    }
+
+    // ================= 6. GOOGLE FORMS STYLE EDITOR LOGIC =================
+    function renderEditor() {
+      const titleInput = document.getElementById('edit-survey-title');
+      const subInput = document.getElementById('edit-survey-subtitle');
+      const headerInput = document.getElementById('edit-header-title');
+      const badgeInput = document.getElementById('edit-badge-text');
+      if (titleInput) titleInput.value = surveyMeta.title;
+      if (subInput) subInput.value = surveyMeta.subtitle;
+      if (headerInput) headerInput.value = surveyMeta.headerTitle;
+      if (badgeInput) badgeInput.value = surveyMeta.badgeText;
+
+      const container = document.getElementById('editor-sections-container');
+      container.innerHTML = surveySchema.map((sec, sIdx) => `
+        <div class="bg-white rounded-2xl shadow-sm border-2 border-slate-200 overflow-hidden">
+          <!-- Section Header Bar -->
+          <div class="bg-slate-50 p-4 md:p-5 border-b border-slate-200 flex flex-wrap items-start justify-between gap-4">
+            <div class="flex-grow space-y-2.5">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="px-2.5 py-0.5 bg-hku-navy text-white text-[11px] font-bold rounded">部分 ${sIdx + 1} / ${surveySchema.length}</span>
+                <input type="text" value="${escapeHtml(sec.tabLabel || '')}" onchange="updateSectionField(${sIdx}, 'tabLabel', this.value)" placeholder="導覽標籤名稱" class="px-2.5 py-1 border border-slate-300 rounded-lg text-xs font-medium w-32 bg-white">
+                <div class="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1">
+                  <span class="text-[11px] font-semibold text-slate-600">題目數量：</span>
+                  <button type="button" onclick="setSectionQuestionCount(${sIdx}, ${sec.questions.length - 1})" class="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center">-</button>
+                  <input type="number" min="1" max="50" value="${sec.questions.length}" onchange="setSectionQuestionCount(${sIdx}, parseInt(this.value))" class="w-11 text-center text-xs font-bold text-hku-blue outline-none">
+                  <button type="button" onclick="setSectionQuestionCount(${sIdx}, ${sec.questions.length + 1})" class="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center">+</button>
+                </div>
+              </div>
+              <input type="text" value="${escapeHtml(sec.title)}" onchange="updateSectionField(${sIdx}, 'title', this.value)" class="w-full text-base md:text-lg font-bold text-hku-navy bg-white px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-hku-blue outline-none">
+              <textarea rows="2" onchange="updateSectionField(${sIdx}, 'description', this.value)" placeholder="本部分研究說明或作答指示..." class="w-full text-xs text-slate-600 bg-white px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-hku-blue outline-none">${escapeHtml(sec.description || '')}</textarea>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button onclick="duplicateSection(${sIdx})" class="px-2.5 py-1.5 bg-blue-50 text-hku-blue hover:bg-blue-100 rounded-lg text-xs font-semibold transition flex items-center gap-1" title="複製整個部分 (Copy Section)">
+                <i data-lucide="copy-plus" class="w-3.5 h-3.5"></i> 複製部分
+              </button>
+              <button onclick="moveSection(${sIdx}, -1)" ${sIdx === 0 ? 'disabled' : ''} class="p-2 text-slate-500 hover:bg-slate-200 rounded-lg disabled:opacity-30" title="上移部分">
+                <i data-lucide="arrow-up" class="w-4 h-4"></i>
+              </button>
+              <button onclick="moveSection(${sIdx}, 1)" ${sIdx === surveySchema.length - 1 ? 'disabled' : ''} class="p-2 text-slate-500 hover:bg-slate-200 rounded-lg disabled:opacity-30" title="下移部分">
+                <i data-lucide="arrow-down" class="w-4 h-4"></i>
+              </button>
+              <button onclick="deleteSection(${sIdx})" class="p-2 text-rose-600 hover:bg-rose-50 rounded-lg" title="刪除此部分">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Questions List in Section -->
+          <div class="p-4 md:p-6 space-y-4">
+            ${sec.questions.map((q, qIdx) => renderEditorQuestionCard(sIdx, qIdx, q)).join('')}
+
+            <!-- Add Question Toolbar -->
+            <div class="pt-3 border-t border-dashed border-slate-200 flex flex-wrap items-center gap-2">
+              <span class="text-xs font-semibold text-slate-500 mr-1">新增題目至此部分：</span>
+              <button onclick="addQuestionToSection(${sIdx}, 'multiple_choice')" class="px-3 py-1.5 bg-blue-50 text-hku-blue hover:bg-blue-100 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                <i data-lucide="circle-dot" class="w-3.5 h-3.5"></i> 單選題
+              </button>
+              <button onclick="addQuestionToSection(${sIdx}, 'checkboxes')" class="px-3 py-1.5 bg-blue-50 text-hku-blue hover:bg-blue-100 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                <i data-lucide="check-square" class="w-3.5 h-3.5"></i> 複選框 (Checkboxes)
+              </button>
+              <button onclick="addQuestionToSection(${sIdx}, 'dropdown')" class="px-3 py-1.5 bg-blue-50 text-hku-blue hover:bg-blue-100 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                <i data-lucide="chevron-down-square" class="w-3.5 h-3.5"></i> 下拉選單 (Dropdown)
+              </button>
+              <button onclick="addQuestionToSection(${sIdx}, 'short_text')" class="px-3 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                <i data-lucide="minus" class="w-3.5 h-3.5"></i> 簡答框 (Short Answer)
+              </button>
+              <button onclick="addQuestionToSection(${sIdx}, 'open_text')" class="px-3 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                <i data-lucide="align-left" class="w-3.5 h-3.5"></i> 詳答框 (Paragraph)
+              </button>
+              <button onclick="addQuestionToSection(${sIdx}, 'likert')" class="px-3 py-1.5 bg-blue-50 text-hku-blue hover:bg-blue-100 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i> 1-7 量表題
+              </button>
+              <button onclick="addQuestionToSection(${sIdx}, 'audio_rating_group')" class="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                <i data-lucide="music" class="w-3.5 h-3.5"></i> 音訊聆聽評估組
+              </button>
+              <button onclick="addQuestionToSection(${sIdx}, 'audio_multiple_choice')" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                <i data-lucide="headphones" class="w-3.5 h-3.5"></i> 音訊歌詞辨認題
+              </button>
+              <button onclick="addQuestionToSection(${sIdx}, 'audio_comparison')" class="px-3 py-1.5 bg-amber-50 text-amber-800 hover:bg-amber-100 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                <i data-lucide="split" class="w-3.5 h-3.5"></i> 雙音訊版本比較
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function renderEditorQuestionCard(sIdx, qIdx, q) {
+      const typeOptions = [
+        { val: 'multiple_choice', text: '單選題 (Multiple Choice)' },
+        { val: 'checkboxes', text: '複選框 (Checkboxes)' },
+        { val: 'dropdown', text: '下拉選單 (Dropdown)' },
+        { val: 'short_text', text: '簡答框 (Short Answer Box)' },
+        { val: 'open_text', text: '詳答框 (Paragraph Answer Box)' },
+        { val: 'likert', text: '1–7 李克特量表 (Likert Scale)' },
+        { val: 'audio_rating_group', text: '音訊 + 4項自然度評分組' },
+        { val: 'audio_multiple_choice', text: '音訊 + 單選辨認題' },
+        { val: 'audio_comparison', text: '雙音訊 A/B 版本比較' },
+        { val: 'checkbox_single', text: '單一確認勾選框 (Consent)' }
+      ];
+
+      let extraControls = '';
+
+      if (q.type === 'audio_rating_group' || q.type === 'audio_multiple_choice') {
+        extraControls += `
+          <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <i data-lucide="file-audio" class="w-4 h-4 text-hku-blue"></i>
+              <span class="text-xs font-semibold text-hku-navy">
+                ${q.audioFileName ? `已上載檔案：${escapeHtml(q.audioFileName)}` : '尚未上載音訊檔（目前使用內建示範音訊）'}
+              </span>
+            </div>
+            <div class="flex items-center gap-2">
+              <select onchange="updateQuestionField(${sIdx}, ${qIdx}, 'isMatch', this.value === 'true')" class="px-2 py-1 text-xs border border-slate-300 rounded-lg bg-white">
+                <option value="true" ${q.isMatch !== false ? 'selected' : ''}>條件：Tone-Melody Match</option>
+                <option value="false" ${q.isMatch === false ? 'selected' : ''}>條件：Tone-Melody Mismatch</option>
+              </select>
+              <label class="px-3 py-1.5 bg-hku-blue text-white text-xs font-semibold rounded-lg hover:bg-blue-700 cursor-pointer transition flex items-center gap-1.5">
+                <i data-lucide="upload" class="w-3.5 h-3.5"></i> 上傳本地音訊
+                <input type="file" accept="audio/*" class="hidden" onchange="handleAudioFileUpload(event, ${sIdx}, ${qIdx}, 'single')">
+              </label>
+              ${q.audioData ? `<button onclick="removeQuestionAudio(${sIdx}, ${qIdx}, 'single')" class="px-2 py-1 text-xs text-rose-600 hover:bg-rose-100 rounded-lg">移除</button>` : ''}
+            </div>
+          </div>
+        `;
+      }
+
+      if (q.type === 'audio_comparison') {
+        extraControls += `
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="bg-slate-100 border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-2">
+              <span class="text-xs font-semibold text-slate-700 truncate">版本 A：${q.audioNameA ? escapeHtml(q.audioNameA) : '預設示範音訊'}</span>
+              <label class="px-2.5 py-1 bg-hku-navy text-white text-xs font-semibold rounded-lg cursor-pointer hover:bg-slate-800 flex-shrink-0">
+                上傳 Audio A
+                <input type="file" accept="audio/*" class="hidden" onchange="handleAudioFileUpload(event, ${sIdx}, ${qIdx}, 'A')">
+              </label>
+            </div>
+            <div class="bg-slate-100 border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-2">
+              <span class="text-xs font-semibold text-slate-700 truncate">版本 B：${q.audioNameB ? escapeHtml(q.audioNameB) : '預設示範音訊'}</span>
+              <label class="px-2.5 py-1 bg-slate-700 text-white text-xs font-semibold rounded-lg cursor-pointer hover:bg-slate-800 flex-shrink-0">
+                上傳 Audio B
+                <input type="file" accept="audio/*" class="hidden" onchange="handleAudioFileUpload(event, ${sIdx}, ${qIdx}, 'B')">
+              </label>
+            </div>
+          </div>
+        `;
+      }
+
+      if (q.type === 'multiple_choice' || q.type === 'checkboxes' || q.type === 'dropdown' || q.type === 'audio_multiple_choice') {
+        const opts = q.options || [];
+        const indicatorClass = q.type === 'checkboxes' ? 'w-4 h-4 rounded border border-slate-400 flex-shrink-0' : 'w-4 h-4 rounded-full border border-slate-400 flex-shrink-0';
+        extraControls += `
+          <div class="space-y-2 pl-2 border-l-2 border-hku-blue/30">
+            <span class="text-[11px] font-semibold text-slate-500">選項設定（可修改文字或增刪選項）：</span>
+            ${opts.map((opt, oIdx) => `
+              <div class="flex items-center gap-2">
+                <span class="${indicatorClass}"></span>
+                <input type="text" value="${escapeHtml(opt)}" onchange="updateOptionText(${sIdx}, ${qIdx}, ${oIdx}, this.value)" class="flex-grow px-2.5 py-1 text-xs border border-slate-300 rounded-lg bg-white">
+                ${q.type === 'audio_multiple_choice' ? `
+                  <button onclick="updateQuestionField(${sIdx}, ${qIdx}, 'correctAnswer', '${escapeHtml(opt)}')" class="px-2 py-1 text-[10px] rounded font-semibold ${q.correctAnswer === opt ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-600'}">
+                    ${q.correctAnswer === opt ? '✓ 正確答案' : '設為正解'}
+                  </button>
+                ` : ''}
+                <button onclick="deleteOption(${sIdx}, ${qIdx}, ${oIdx})" class="text-slate-400 hover:text-rose-600 p-1"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+              </div>
+            `).join('')}
+            <button onclick="addOption(${sIdx}, ${qIdx})" class="text-xs font-semibold text-hku-blue hover:underline flex items-center gap-1 pt-1">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> 新增選項
+            </button>
+          </div>
+        `;
+      }
+
+      if (q.type === 'short_text' || q.type === 'open_text') {
+        extraControls += `
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] text-slate-500 flex-shrink-0">輸入框提示文字 (Placeholder)：</span>
+            <input type="text" value="${escapeHtml(q.placeholder || '')}" onchange="updateQuestionField(${sIdx}, ${qIdx}, 'placeholder', this.value)" placeholder="例如：請輸入你的回答..." class="flex-grow px-2.5 py-1 text-xs border border-slate-300 rounded-lg bg-white">
+          </div>
+        `;
+      }
+
+      if (q.type === 'likert') {
+        extraControls += `
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[11px] text-slate-500">最小值 (1) 標籤：</label>
+              <input type="text" value="${escapeHtml(q.minLabel || '1 = 非常不同意')}" onchange="updateQuestionField(${sIdx}, ${qIdx}, 'minLabel', this.value)" class="w-full px-2.5 py-1 text-xs border border-slate-300 rounded-lg bg-white">
+            </div>
+            <div>
+              <label class="text-[11px] text-slate-500">最大值 (7) 標籤：</label>
+              <input type="text" value="${escapeHtml(q.maxLabel || '7 = 非常同意')}" onchange="updateQuestionField(${sIdx}, ${qIdx}, 'maxLabel', this.value)" class="w-full px-2.5 py-1 text-xs border border-slate-300 rounded-lg bg-white">
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/40 space-y-3 hover:border-hku-blue/50 transition">
+          <div class="flex flex-wrap items-center gap-2.5">
+            <input type="text" value="${escapeHtml(q.label)}" onchange="updateQuestionField(${sIdx}, ${qIdx}, 'label', this.value)" placeholder="輸入題目標題..." class="flex-grow font-semibold text-sm text-slate-800 px-3 py-1.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-hku-blue outline-none">
+            
+            <select onchange="changeQuestionType(${sIdx}, ${qIdx}, this.value)" class="px-2.5 py-1.5 text-xs font-medium bg-white border border-slate-300 rounded-lg text-slate-700">
+              ${typeOptions.map(t => `<option value="${t.val}" ${q.type === t.val ? 'selected' : ''}>${t.text}</option>`).join('')}
+            </select>
+
+            <label class="flex items-center gap-1 text-xs text-slate-600 cursor-pointer px-2">
+              <input type="checkbox" ${q.required ? 'checked' : ''} onchange="updateQuestionField(${sIdx}, ${qIdx}, 'required', this.checked)" class="rounded text-hku-blue"> 必填
+            </label>
+
+            <div class="flex items-center gap-1">
+              <button onclick="duplicateQuestion(${sIdx}, ${qIdx})" class="p-1.5 text-hku-blue hover:bg-blue-50 rounded-lg" title="複製此題目"><i data-lucide="copy" class="w-4 h-4"></i></button>
+              <button onclick="moveQuestion(${sIdx}, ${qIdx}, -1)" ${qIdx === 0 ? 'disabled' : ''} class="p-1.5 text-slate-400 hover:text-slate-700 disabled:opacity-30" title="上移"><i data-lucide="chevron-up" class="w-4 h-4"></i></button>
+              <button onclick="moveQuestion(${sIdx}, ${qIdx}, 1)" ${qIdx === surveySchema[sIdx].questions.length - 1 ? 'disabled' : ''} class="p-1.5 text-slate-400 hover:text-slate-700 disabled:opacity-30" title="下移"><i data-lucide="chevron-down" class="w-4 h-4"></i></button>
+              <button onclick="deleteQuestion(${sIdx}, ${qIdx})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg" title="刪除"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+          ${extraControls}
+        </div>
+      `;
+    }
+
+    function updateSectionField(sIdx, field, val) {
+      surveySchema[sIdx][field] = val;
+      saveSchemaToStorage();
+    }
+
+    function setSectionQuestionCount(sIdx, targetCount) {
+      if (isNaN(targetCount) || targetCount < 1) {
+        showToast("每個部分至少需要保留 1 題。");
+        renderEditor();
+        return;
+      }
+      if (targetCount > 50) targetCount = 50;
+      const questions = surveySchema[sIdx].questions;
+      const currentCount = questions.length;
+
+      if (targetCount === currentCount) return;
+
+      if (targetCount > currentCount) {
+        const diff = targetCount - currentCount;
+        const template = questions[currentCount - 1] || { type: 'multiple_choice', options: ['選項 1', '選項 2'], required: true };
+        for (let i = 0; i < diff; i++) {
+          const clone = JSON.parse(JSON.stringify(template));
+          clone.id = `q_${Date.now()}_${i}`;
+          clone.label = `題目 ${currentCount + i + 1}`;
+          clone.audioData = null;
+          clone.audioFileName = "";
+          clone.audioDataA = null;
+          clone.audioNameA = "";
+          clone.audioDataB = null;
+          clone.audioNameB = "";
+          questions.push(clone);
+        }
+        saveSchemaToStorage();
+        renderEditor();
+        showToast(`已將本部分題目數量調整為 ${targetCount} 題！`);
+      } else {
+        openConfirmModal(`確定要將本部分題目數量由 ${currentCount} 題減少至 ${targetCount} 題嗎？（將移除最後 ${currentCount - targetCount} 題）`, () => {
+          surveySchema[sIdx].questions.splice(targetCount);
+          saveSchemaToStorage();
+          renderEditor();
+          showToast(`已調整為 ${targetCount} 題。`);
+        });
+        renderEditor();
+      }
+    }
+
+    function duplicateQuestion(sIdx, qIdx) {
+      const orig = surveySchema[sIdx].questions[qIdx];
+      const clone = JSON.parse(JSON.stringify(orig));
+      clone.id = `q_${Date.now()}`;
+      clone.label = `${orig.label} (副本)`;
+      surveySchema[sIdx].questions.splice(qIdx + 1, 0, clone);
+      saveSchemaToStorage();
+      renderEditor();
+      showToast("已複製題目！");
+    }
+
+    function duplicateSection(sIdx) {
+      const origSec = surveySchema[sIdx];
+      const cloneSec = JSON.parse(JSON.stringify(origSec));
+      const ts = Date.now();
+      cloneSec.id = `sec_${ts}`;
+      cloneSec.title = `${origSec.title} (副本)`;
+      cloneSec.tabLabel = origSec.tabLabel ? `${origSec.tabLabel} (副本)` : `部分 ${sIdx + 2}`;
+      cloneSec.questions = (cloneSec.questions || []).map((q, idx) => ({
+        ...q,
+        id: `q_${ts}_${idx}`
+      }));
+      surveySchema.splice(sIdx + 1, 0, cloneSec);
+      saveSchemaToStorage();
+      renderEditor();
+      showToast("已複製整個問卷部分（包含所有題目與設定）！");
+    }
+
+    function addNewSection() {
+      const num = surveySchema.length + 1;
+      surveySchema.push({
+        id: `sec_${Date.now()}`,
+        tabLabel: `部分 ${num}`,
+        badge: `Part ${num}`,
+        title: `第${num}部分：新問卷分區`,
+        description: "請在此輸入本部分的作答說明。",
+        questions: [
+          { id: `q_${Date.now()}`, type: "multiple_choice", label: "新問題 1", options: ["選項 1", "選項 2"], required: true }
+        ]
+      });
+      saveSchemaToStorage();
+      renderEditor();
+      showToast("已新增問卷部分！");
+    }
+
+    function moveSection(sIdx, dir) {
+      const target = sIdx + dir;
+      if (target < 0 || target >= surveySchema.length) return;
+      const temp = surveySchema[sIdx];
+      surveySchema[sIdx] = surveySchema[target];
+      surveySchema[target] = temp;
+      saveSchemaToStorage();
+      renderEditor();
+    }
+
+    function deleteSection(sIdx) {
+      if (surveySchema.length <= 1) {
+        showToast("問卷至少需要保留一個部分。");
+        return;
+      }
+      openConfirmModal("確定要刪除此問卷部分及其內所有題目嗎？", () => {
+        surveySchema.splice(sIdx, 1);
+        saveSchemaToStorage();
+        renderEditor();
+        showToast("已刪除該部分。");
+      });
+    }
+
+    function addQuestionToSection(sIdx, type) {
+      const qId = `q_${Date.now()}`;
+      const newQ = { id: qId, type: type, label: "新題目", required: true };
+      if (type === 'multiple_choice' || type === 'checkboxes' || type === 'dropdown') {
+        newQ.options = ["選項 A", "選項 B", "選項 C"];
+      } else if (type === 'likert') {
+        newQ.minLabel = "1 = 非常不同意";
+        newQ.maxLabel = "7 = 非常同意";
+      } else if (type === 'audio_rating_group') {
+        newQ.label = "新音訊評估題";
+        newQ.isMatch = true;
+        newQ.audioData = null;
+        newQ.audioFileName = "";
+      } else if (type === 'audio_multiple_choice') {
+        newQ.label = "新歌詞辨認題：請問你聽到哪一句？";
+        newQ.options = ["選項一", "選項二", "選項三", "選項四"];
+        newQ.correctAnswer = "選項一";
+        newQ.isMatch = false;
+        newQ.audioData = null;
+      } else if (type === 'audio_comparison') {
+        newQ.label = "新版本比較 (A vs B)";
+        newQ.audioDataA = null;
+        newQ.audioDataB = null;
+      } else if (type === 'short_text') {
+        newQ.placeholder = "請輸入簡短回答...";
+      } else if (type === 'open_text') {
+        newQ.placeholder = "請在此輸入詳細文字...";
+      }
+      surveySchema[sIdx].questions.push(newQ);
+      saveSchemaToStorage();
+      renderEditor();
+      showToast("已新增題目！");
+    }
+
+    function updateQuestionField(sIdx, qIdx, field, val) {
+      surveySchema[sIdx].questions[qIdx][field] = val;
+      saveSchemaToStorage();
+      if (field === 'correctAnswer') renderEditor();
+    }
+
+    function changeQuestionType(sIdx, qIdx, newType) {
+      const q = surveySchema[sIdx].questions[qIdx];
+      q.type = newType;
+      if ((newType === 'multiple_choice' || newType === 'checkboxes' || newType === 'dropdown' || newType === 'audio_multiple_choice') && !q.options) {
+        q.options = ["選項 1", "選項 2", "選項 3"];
+      }
+      if (newType === 'likert') {
+        q.minLabel = q.minLabel || "1 = 非常不同意";
+        q.maxLabel = q.maxLabel || "7 = 非常同意";
+      }
+      saveSchemaToStorage();
+      renderEditor();
+    }
+
+    function updateOptionText(sIdx, qIdx, oIdx, val) {
+      surveySchema[sIdx].questions[qIdx].options[oIdx] = val;
+      saveSchemaToStorage();
+    }
+
+    function addOption(sIdx, qIdx) {
+      const opts = surveySchema[sIdx].questions[qIdx].options;
+      opts.push(`選項 ${opts.length + 1}`);
+      saveSchemaToStorage();
+      renderEditor();
+    }
+
+    function deleteOption(sIdx, qIdx, oIdx) {
+      const opts = surveySchema[sIdx].questions[qIdx].options;
+      if (opts.length <= 1) return;
+      opts.splice(oIdx, 1);
+      saveSchemaToStorage();
+      renderEditor();
+    }
+
+    function moveQuestion(sIdx, qIdx, dir) {
+      const arr = surveySchema[sIdx].questions;
+      const target = qIdx + dir;
+      if (target < 0 || target >= arr.length) return;
+      const temp = arr[qIdx];
+      arr[qIdx] = arr[target];
+      arr[target] = temp;
+      saveSchemaToStorage();
+      renderEditor();
+    }
+
+    function deleteQuestion(sIdx, qIdx) {
+      surveySchema[sIdx].questions.splice(qIdx, 1);
+      saveSchemaToStorage();
+      renderEditor();
+      showToast("已刪除題目。");
+    }
+
+    function handleAudioFileUpload(event, sIdx, qIdx, slot) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (file.size > 3.5 * 1024 * 1024) {
+        showToast("檔案大小超過 3.5MB，建議壓縮為較短 MP3 以免超出瀏覽器儲存限制。");
+      }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const q = surveySchema[sIdx].questions[qIdx];
+        if (slot === 'A') {
+          q.audioDataA = e.target.result;
+          q.audioNameA = file.name;
+        } else if (slot === 'B') {
+          q.audioDataB = e.target.result;
+          q.audioNameB = file.name;
+        } else {
+          q.audioData = e.target.result;
+          q.audioFileName = file.name;
+        }
+        saveSchemaToStorage();
+        renderEditor();
+        showToast(`成功載入音訊：${file.name}`);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeQuestionAudio(sIdx, qIdx, slot) {
+      const q = surveySchema[sIdx].questions[qIdx];
+      if (slot === 'A') { q.audioDataA = null; q.audioNameA = ""; }
+      else if (slot === 'B') { q.audioDataB = null; q.audioNameB = ""; }
+      else { q.audioData = null; q.audioFileName = ""; }
+      saveSchemaToStorage();
+      renderEditor();
+      showToast("已移除自訂音訊檔。");
+    }
+
+    function confirmResetSchema() {
+      openConfirmModal("確定要將問卷標題、題目與分區還原為預設的 CEDU9001 內容嗎？", () => {
+        surveyMeta = { ...DEFAULT_SURVEY_META };
+        localStorage.setItem('hku_cedu9001_meta', JSON.stringify(surveyMeta));
+        applySurveyMetaToDOM();
+        surveySchema = JSON.parse(JSON.stringify(DEFAULT_SURVEY_SCHEMA));
+        saveSchemaToStorage();
+        renderEditor();
+        showToast("已還原預設問卷標題與內容。");
+      });
+    }
+
+    // ================= 7. DASHBOARD ANALYTICS & EXPORT =================
+    function updateResponseBadgeCount() {
+      document.getElementById('response-count-badge').textContent = responsesDatabase.length;
+    }
+
+    function generateMockData() {
+      const mockAges = ["18–20歲", "21–25歲", "26–30歲", "31歲或以上"];
+      const mockLangs = ["粵語", "粵語", "粵語", "普通話", "英語"];
+      const mockGenders = ["男", "女", "女", "不願透露"];
+      const mockTrainings = ["沒有", "1–3年", "4–6年", "7年或以上"];
+      const mockPriorities = ["歌詞聲調", "音樂旋律", "兩者同樣重要"];
+
+      for (let i = 0; i < 15; i++) {
+        const isNative = Math.random() > 0.2;
+        const mockProf = isNative ? (Math.random() > 0.3 ? 7 : 6) : Math.floor(Math.random() * 4) + 2;
+
+        const payload = {
+          timestamp: new Date(Date.now() - Math.floor(Math.random() * 864000000)).toISOString(),
+          age: mockAges[Math.floor(Math.random() * mockAges.length)],
+          gender: mockGenders[Math.floor(Math.random() * mockGenders.length)],
+          native_language: isNative ? "粵語" : mockLangs[Math.floor(Math.random() * mockLangs.length)],
+          cantonese_proficiency: mockProf,
+          listen_frequency: "每週4–6次",
+          music_training: mockTrainings[Math.floor(Math.random() * mockTrainings.length)],
+          sheet_music: Math.random() > 0.5 ? "是" : "否",
+          part3_listening: [1,2,3,4,5,6].map(id => {
+            const isMatch = id % 2 === 1;
+            const base = isMatch ? 5.9 : 3.1;
+            const off = () => (Math.random() * 1.4 - 0.7);
+            return {
+              audio_id: `audio_${id}`,
+              isMatch: isMatch,
+              naturalness: Math.min(7, Math.max(1, Math.round(base + off()))),
+              fit: Math.min(7, Math.max(1, Math.round(base + off()))),
+              understanding: Math.min(7, Math.max(1, Math.round(base + off()))),
+              pronunciation: Math.min(7, Math.max(1, Math.round(base + off())))
+            };
+          }),
+          part4_comparison: {
+            natural: Math.random() > 0.2 ? "A" : "B",
+            intelligible: Math.random() > 0.2 ? "A" : "B",
+            fit: Math.random() > 0.15 ? "A" : "B",
+            professional: Math.random() > 0.2 ? "A" : "沒有明顯差異"
+          },
+          part5_lyrics: [7,8,9,10,11].map(id => {
+            const isMatch = id % 2 === 0;
+            const isCorrect = Math.random() < (isMatch ? 0.92 : 0.44);
+            return { audio_id: `lyric_${id}`, isMatch: isMatch, isCorrect: isCorrect };
+          }),
+          part6_attitudes: [1,2,3,4,5,6].map(id => ({
+            statement_id: `attitude_${id}`,
+            score: Math.min(7, Math.max(1, Math.round((id === 5 ? 3.2 : 5.6) + (Math.random() * 2 - 1))))
+          })),
+          part7_open: {
+            q1_characteristics: "歌詞協音、旋律走勢符合粵語九聲變化，聽起來順暢自然。",
+            q2_unnatural_notes: "部分錄音出現明顯倒字，影響第一時間理解字義。",
+            priority: mockPriorities[Math.floor(Math.random() * mockPriorities.length)],
+            priority_reason: "粵語屬聲調語言，聲調配合度直接決定聽眾能否聽懂歌詞。"
+          }
+        };
+        // Populate raw_answers for complete question-by-question analysis
+        const raw = {
+          consent: true,
+          age: payload.age,
+          gender: payload.gender,
+          native_language: payload.native_language,
+          cantonese_proficiency: payload.cantonese_proficiency,
+          listen_frequency: payload.listen_frequency,
+          music_training: payload.music_training,
+          sheet_music: payload.sheet_music,
+          comp_1_natural: payload.part4_comparison.natural,
+          comp_1_intelligible: payload.part4_comparison.intelligible,
+          comp_1_fit: payload.part4_comparison.fit,
+          comp_1_professional: payload.part4_comparison.professional,
+          open_q1: payload.part7_open.q1_characteristics,
+          open_q2: payload.part7_open.q2_unnatural_notes,
+          creation_priority: payload.part7_open.priority,
+          priority_reason: payload.part7_open.priority_reason
+        };
+        payload.part3_listening.forEach(item => {
+          raw[`${item.audio_id}_naturalness`] = item.naturalness;
+          raw[`${item.audio_id}_fit`] = item.fit;
+          raw[`${item.audio_id}_understanding`] = item.understanding;
+          raw[`${item.audio_id}_pronunciation`] = item.pronunciation;
+        });
+        const lyricMap = {
+          lyric_7: ["風繼續吹", "東繼續吹", "通繼續吹", "空繼續吹"],
+          lyric_8: ["讓愛同行", "讓你同行", "讓我同行", "讓夢同行"],
+          lyric_9: ["歲月如歌", "碎月如歌", "睡月如歌", "隨月如歌"],
+          lyric_10: ["傾城之戀", "城城之戀", "清城之戀", "驚城之戀"],
+          lyric_11: ["光輝歲月", "廣輝歲月", "港輝歲月", "狂輝歲月"]
+        };
+        payload.part5_lyrics.forEach(item => {
+          const opts = lyricMap[item.audio_id] || ["風繼續吹", "東繼續吹"];
+          item.selected = item.isCorrect ? opts[0] : opts[1 + Math.floor(Math.random() * (opts.length - 1))];
+          raw[item.audio_id] = item.selected;
+        });
+        payload.part6_attitudes.forEach(item => {
+          raw[item.statement_id] = item.score;
+        });
+        payload.raw_answers = raw;
+        responsesDatabase.push(payload);
+      }
+
+      localStorage.setItem('hku_cantonese_responses', JSON.stringify(responsesDatabase));
+      updateResponseBadgeCount();
+      refreshDashboardAnalytics();
+      showToast("已生成 15 筆模擬研究數據！");
+    }
+
+    function confirmClearData() {
+      openConfirmModal("確定要清空所有已收集的問卷數據嗎？此動作無法復原。", () => {
+        responsesDatabase = [];
+        localStorage.removeItem('hku_cantonese_responses');
+        updateResponseBadgeCount();
+        refreshDashboardAnalytics();
+        showToast("已清空所有數據。");
+      });
+    }
+
+    function exportJSONData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(responsesDatabase, null, 2));
+      const a = document.createElement('a');
+      a.setAttribute("href", dataStr);
+      a.setAttribute("download", `HKU_CEDU9001_Data_${Date.now()}.json`);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    function exportCSVData() {
+      if (responsesDatabase.length === 0) {
+        showToast("目前無可匯出的數據！");
+        return;
+      }
+      let csv = "Timestamp,Age,Gender,NativeLanguage,CantoneseProficiency,MusicTraining,ListenFrequency,LyricAccuracyRate,OpenQ1,OpenQ2,PriorityPreference,PriorityReason\n";
+      responsesDatabase.forEach(r => {
+        const lyrics = r.part5_lyrics || [];
+        const correctCount = lyrics.filter(l => l.isCorrect).length;
+        const acc = lyrics.length ? ((correctCount / lyrics.length) * 100).toFixed(1) : "0";
+        const esc = (s) => `"${(s || '').replace(/"/g, '""')}"`;
+        csv += `${r.timestamp},${esc(r.age)},${esc(r.gender)},${esc(r.native_language)},${r.cantonese_proficiency},${esc(r.music_training)},${esc(r.listen_frequency)},${acc}%,${esc(r.part7_open?.q1_characteristics)},${esc(r.part7_open?.q2_unnatural_notes)},${esc(r.part7_open?.priority)},${esc(r.part7_open?.priority_reason)}\n`;
+      });
+      const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `HKU_CEDU9001_RawData_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    let chartAgeInst, chartLangInst, chartMusicInst, chartMatchMismatchInst, chartCompInst, chartLyricMatchInst;
+
+    function refreshDashboardAnalytics() {
+      document.getElementById('stat-total-responses').textContent = responsesDatabase.length;
+
+      if (responsesDatabase.length === 0) {
+        document.getElementById('stat-avg-prof').textContent = "0.0 / 7";
+        document.getElementById('stat-lyric-accuracy').textContent = "0%";
+        document.getElementById('stat-music-ratio').textContent = "0%";
+        renderQualitativeTable([]);
+        return;
+      }
+
+      const avgProf = (responsesDatabase.reduce((acc, r) => acc + (r.cantonese_proficiency || 0), 0) / responsesDatabase.length).toFixed(1);
+      document.getElementById('stat-avg-prof').textContent = `${avgProf} / 7`;
+
+      let totalLyricQs = 0, totalLyricCorrect = 0;
+      responsesDatabase.forEach(r => {
+        (r.part5_lyrics || []).forEach(l => {
+          totalLyricQs++;
+          if (l.isCorrect) totalLyricCorrect++;
+        });
+      });
+      const lyricAcc = totalLyricQs ? ((totalLyricCorrect / totalLyricQs) * 100).toFixed(1) : "0";
+      document.getElementById('stat-lyric-accuracy').textContent = `${lyricAcc}%`;
+
+      const trainedCount = responsesDatabase.filter(r => r.music_training && r.music_training !== '沒有').length;
+      document.getElementById('stat-music-ratio').textContent = `${((trainedCount / responsesDatabase.length) * 100).toFixed(0)}%`;
+
+      const ageCounts = {};
+      const langCounts = {};
+      const musicCounts = {};
+      responsesDatabase.forEach(r => {
+        ageCounts[r.age] = (ageCounts[r.age] || 0) + 1;
+        langCounts[r.native_language] = (langCounts[r.native_language] || 0) + 1;
+        musicCounts[r.music_training] = (musicCounts[r.music_training] || 0) + 1;
+      });
+
+      if (chartAgeInst) chartAgeInst.destroy();
+      chartAgeInst = new Chart(document.getElementById('chart-age'), {
+        type: 'doughnut',
+        data: { labels: Object.keys(ageCounts), datasets: [{ data: Object.values(ageCounts), backgroundColor: ['#0055A5', '#C5A059', '#0D9488', '#64748B'] }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+      });
+
+      if (chartLangInst) chartLangInst.destroy();
+      chartLangInst = new Chart(document.getElementById('chart-language'), {
+        type: 'pie',
+        data: { labels: Object.keys(langCounts), datasets: [{ data: Object.values(langCounts), backgroundColor: ['#002147', '#38BDF8', '#F59E0B', '#10B981'] }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+      });
+
+      if (chartMusicInst) chartMusicInst.destroy();
+      chartMusicInst = new Chart(document.getElementById('chart-music'), {
+        type: 'bar',
+        data: { labels: Object.keys(musicCounts), datasets: [{ label: '人數', data: Object.values(musicCounts), backgroundColor: '#0055A5' }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+
+      let mNat = 0, mFit = 0, mUnd = 0, mPro = 0, mCnt = 0;
+      let misNat = 0, misFit = 0, misUnd = 0, misPro = 0, misCnt = 0;
+      responsesDatabase.forEach(r => {
+        (r.part3_listening || []).forEach(item => {
+          if (item.isMatch) {
+            mNat += item.naturalness; mFit += item.fit; mUnd += item.understanding; mPro += item.pronunciation; mCnt++;
+          } else {
+            misNat += item.naturalness; misFit += item.fit; misUnd += item.understanding; misPro += item.pronunciation; misCnt++;
+          }
+        });
+      });
+
+      if (chartMatchMismatchInst) chartMatchMismatchInst.destroy();
+      chartMatchMismatchInst = new Chart(document.getElementById('chart-match-mismatch'), {
+        type: 'bar',
+        data: {
+          labels: ['自然度', '歌詞旋律配合度', '容易理解度', '發音自然度'],
+          datasets: [
+            { label: 'Tone-Melody Match', data: mCnt ? [mNat/mCnt, mFit/mCnt, mUnd/mCnt, mPro/mCnt].map(v => v.toFixed(2)) : [0,0,0,0], backgroundColor: '#10B981' },
+            { label: 'Tone-Melody Mismatch', data: misCnt ? [misNat/misCnt, misFit/misCnt, misUnd/misCnt, misPro/misCnt].map(v => v.toFixed(2)) : [0,0,0,0], backgroundColor: '#EF4444' }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 1, max: 7 } } }
+      });
+
+      let cA = 0, cB = 0, cNone = 0;
+      responsesDatabase.forEach(r => {
+        if (r.part4_comparison) {
+          Object.values(r.part4_comparison).forEach(v => { if (v === 'A') cA++; else if (v === 'B') cB++; else cNone++; });
+        }
+      });
+      if (chartCompInst) chartCompInst.destroy();
+      chartCompInst = new Chart(document.getElementById('chart-comparison'), {
+        type: 'doughnut',
+        data: { labels: ['版本 A', '版本 B', '沒有明顯差異'], datasets: [{ data: [cA, cB, cNone], backgroundColor: ['#002147', '#EF4444', '#94A3B8'] }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+      });
+
+      let lmOk = 0, lmTot = 0, lmisOk = 0, lmisTot = 0;
+      responsesDatabase.forEach(r => {
+        (r.part5_lyrics || []).forEach(item => {
+          if (item.isMatch) { lmTot++; if (item.isCorrect) lmOk++; }
+          else { lmisTot++; if (item.isCorrect) lmisOk++; }
+        });
+      });
+      if (chartLyricMatchInst) chartLyricMatchInst.destroy();
+      chartLyricMatchInst = new Chart(document.getElementById('chart-lyric-match'), {
+        type: 'bar',
+        data: {
+          labels: ['Tone-Melody Match', 'Tone-Melody Mismatch'],
+          datasets: [{ label: '正確率 (%)', data: [lmTot ? ((lmOk/lmTot)*100).toFixed(1) : 0, lmisTot ? ((lmisOk/lmisTot)*100).toFixed(1) : 0], backgroundColor: ['#0D9488', '#F59E0B'] }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } }
+      });
+
+      renderQualitativeTable(responsesDatabase);
+      populateQbqSectionFilter();
+      renderQuestionByQuestionAnalysis();
+    }
+
+    function populateQbqSectionFilter() {
+      const sel = document.getElementById('qbq-section-filter');
+      if (!sel) return;
+      const prev = sel.value || 'all';
+      sel.innerHTML = `<option value="all">全部部分 (All Sections)</option>` +
+        surveySchema.map((sec, idx) => `<option value="${sec.id}">${escapeHtml(sec.title || `部分 ${idx + 1}`)}</option>`).join('');
+      if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+    }
+
+    function getAnswerValueForQuestion(r, key) {
+      if (r.raw_answers && r.raw_answers[key] !== undefined && r.raw_answers[key] !== null && r.raw_answers[key] !== '') {
+        return r.raw_answers[key];
+      }
+      if (r[key] !== undefined && r[key] !== null && r[key] !== '') {
+        return r[key];
+      }
+      if (key.startsWith('audio_') && Array.isArray(r.part3_listening)) {
+        const parts = key.split('_');
+        const sub = parts[parts.length - 1];
+        const baseId = parts.slice(0, -1).join('_');
+        const found = r.part3_listening.find(x => x.audio_id === baseId);
+        if (found && found[sub] !== undefined) return found[sub];
+      }
+      if (key.startsWith('comp_1_') && r.part4_comparison) {
+        const sub = key.replace('comp_1_', '');
+        if (r.part4_comparison[sub] !== undefined) return r.part4_comparison[sub];
+      }
+      if (key.startsWith('lyric_') && Array.isArray(r.part5_lyrics)) {
+        const found = r.part5_lyrics.find(x => x.audio_id === key);
+        if (found && found.selected) return found.selected;
+      }
+      if (key.startsWith('attitude_') && Array.isArray(r.part6_attitudes)) {
+        const found = r.part6_attitudes.find(x => x.statement_id === key);
+        if (found && found.score !== undefined) return found.score;
+      }
+      if (key === 'open_q1' && r.part7_open) return r.part7_open.q1_characteristics;
+      if (key === 'open_q2' && r.part7_open) return r.part7_open.q2_unnatural_notes;
+      if (key === 'creation_priority' && r.part7_open) return r.part7_open.priority;
+      if (key === 'priority_reason' && r.part7_open) return r.part7_open.priority_reason;
+      return undefined;
+    }
+
+    function computeNumericStats(vals) {
+      if (!vals.length) return { count: 0, mean: '0.00', sd: '0.00', median: '0.0', min: '-', max: '-' };
+      const sorted = [...vals].sort((a, b) => a - b);
+      const count = vals.length;
+      const sum = vals.reduce((a, b) => a + b, 0);
+      const mean = sum / count;
+      const variance = vals.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / count;
+      const sd = Math.sqrt(variance);
+      const mid = Math.floor(count / 2);
+      const median = count % 2 === 0 ? ((sorted[mid - 1] + sorted[mid]) / 2).toFixed(1) : sorted[mid].toFixed(1);
+      return {
+        count,
+        mean: mean.toFixed(2),
+        sd: sd.toFixed(2),
+        median,
+        min: sorted[0],
+        max: sorted[sorted.length - 1]
+      };
+    }
+
+    function renderDistributionBars(options, countsMap, totalResp, correctAnswer = null) {
+      const allKeys = [...options];
+      Object.keys(countsMap).forEach(k => { if (!allKeys.includes(k)) allKeys.push(k); });
+      return `
+        <div class="space-y-2">
+          ${allKeys.map(opt => {
+            const cnt = countsMap[opt] || 0;
+            const pct = totalResp > 0 ? ((cnt / totalResp) * 100).toFixed(1) : '0.0';
+            const isCorrect = correctAnswer && opt === correctAnswer;
+            const barColor = isCorrect ? 'bg-emerald-500' : 'bg-hku-blue';
+            return `
+              <div>
+                <div class="flex justify-between items-center text-xs mb-1">
+                  <span class="font-medium text-slate-700 flex items-center gap-1.5">
+                    ${escapeHtml(opt)}
+                    ${isCorrect ? '<span class="px-1.5 py-0.2 bg-emerald-100 text-emerald-700 rounded text-[10px] font-bold">正確答案</span>' : ''}
+                  </span>
+                  <span class="font-mono text-slate-600 font-semibold">${cnt} 人 (${pct}%)</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                  <div class="${barColor} h-2.5 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function renderLikertDistribution(vals, minLabel, maxLabel) {
+      const stats = computeNumericStats(vals);
+      const dist = { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0 };
+      vals.forEach(v => { if (dist[v] !== undefined) dist[v]++; });
+      const total = vals.length;
+      return `
+        <div class="space-y-3">
+          <div class="flex flex-wrap gap-2 text-xs">
+            <span class="px-2.5 py-1 bg-blue-50 text-hku-blue rounded-lg font-bold">平均分 (Mean): ${stats.mean} / 7</span>
+            <span class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg font-semibold">標準差 (SD): ${stats.sd}</span>
+            <span class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg font-semibold">中位數 (Median): ${stats.median}</span>
+            <span class="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg">有效作答: ${total}</span>
+          </div>
+          <div class="grid grid-cols-7 gap-2 pt-1">
+            ${[1,2,3,4,5,6,7].map(score => {
+              const cnt = dist[score];
+              const pct = total > 0 ? Math.round((cnt / total) * 100) : 0;
+              return `
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 text-center">
+                  <div class="text-xs font-bold text-hku-navy">${score} 分</div>
+                  <div class="my-1.5 h-12 bg-slate-200/70 rounded-md flex items-end justify-center overflow-hidden">
+                    <div class="w-full bg-hku-blue/85 transition-all" style="height: ${pct}%"></div>
+                  </div>
+                  <div class="text-[11px] font-semibold text-slate-700">${cnt} 人</div>
+                  <div class="text-[10px] text-slate-400">${pct}%</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+          ${(minLabel || maxLabel) ? `
+            <div class="flex justify-between text-[11px] text-slate-400 px-1">
+              <span>${escapeHtml(minLabel || '')}</span>
+              <span>${escapeHtml(maxLabel || '')}</span>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    function renderQuestionByQuestionAnalysis() {
+      const container = document.getElementById('qbq-analysis-container');
+      if (!container) return;
+
+      if (responsesDatabase.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 text-xs text-slate-400">尚無問卷提交數據，請先收集問卷或點擊上方「生成 15 筆測試數據」。</div>`;
+        return;
+      }
+
+      const selectedSecId = document.getElementById('qbq-section-filter')?.value || 'all';
+      const sectionsToRender = selectedSecId === 'all'
+        ? surveySchema
+        : surveySchema.filter(s => s.id === selectedSecId);
+
+      container.innerHTML = sectionsToRender.map((sec, sIdx) => {
+        const questionsHtml = (sec.questions || []).map((q, qIdx) => {
+          let bodyHtml = '';
+          let badgeText = '';
+
+          if (q.type === 'checkbox_single') {
+            badgeText = '確認勾選';
+            let yesCnt = 0;
+            responsesDatabase.forEach(r => {
+              if (getAnswerValueForQuestion(r, q.id) === true) yesCnt++;
+            });
+            const pct = ((yesCnt / responsesDatabase.length) * 100).toFixed(1);
+            bodyHtml = renderDistributionBars(['已勾選同意'], { '已勾選同意': yesCnt }, responsesDatabase.length);
+            bodyHtml += `<p class="text-[11px] text-slate-500 mt-2">同意比例：${yesCnt} / ${responsesDatabase.length} (${pct}%)</p>`;
+          }
+          else if (q.type === 'multiple_choice' || q.type === 'dropdown') {
+            badgeText = q.type === 'dropdown' ? '下拉單選' : '單選題';
+            const counts = {};
+            let validTotal = 0;
+            responsesDatabase.forEach(r => {
+              const v = getAnswerValueForQuestion(r, q.id);
+              if (v !== undefined && v !== '') {
+                counts[v] = (counts[v] || 0) + 1;
+                validTotal++;
+              }
+            });
+            bodyHtml = renderDistributionBars(q.options || [], counts, validTotal);
+          }
+          else if (q.type === 'checkboxes') {
+            badgeText = '多選題';
+            const counts = {};
+            let validRespondents = 0;
+            responsesDatabase.forEach(r => {
+              const arr = getAnswerValueForQuestion(r, q.id);
+              if (Array.isArray(arr) && arr.length > 0) {
+                validRespondents++;
+                arr.forEach(item => { counts[item] = (counts[item] || 0) + 1; });
+              }
+            });
+            bodyHtml = renderDistributionBars(q.options || [], counts, validRespondents);
+            bodyHtml += `<p class="text-[11px] text-slate-400 mt-2">註：多選題百分比以有效作答人數（${validRespondents} 人）為分母，總和可超過 100%。</p>`;
+          }
+          else if (q.type === 'likert') {
+            badgeText = '1–7 量表';
+            const vals = [];
+            responsesDatabase.forEach(r => {
+              const v = Number(getAnswerValueForQuestion(r, q.id));
+              if (!isNaN(v) && v >= 1 && v <= 7) vals.push(v);
+            });
+            bodyHtml = renderLikertDistribution(vals, q.minLabel, q.maxLabel);
+          }
+          else if (q.type === 'audio_rating_group') {
+            badgeText = q.isMatch !== false ? '音訊評估 (Match)' : '音訊評估 (Mismatch)';
+            const subItems = [
+              { key: 'naturalness', title: '1. 自然度 (Naturalness)' },
+              { key: 'fit', title: '2. 旋律配合度 (Tone-Melody Fit)' },
+              { key: 'understanding', title: '3. 歌詞理解度 (Intelligibility)' },
+              { key: 'pronunciation', title: '4. 粵語發音自然度 (Pronunciation)' }
+            ];
+            bodyHtml = `
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                ${subItems.map(sub => {
+                  const vals = [];
+                  responsesDatabase.forEach(r => {
+                    const v = Number(getAnswerValueForQuestion(r, `${q.id}_${sub.key}`));
+                    if (!isNaN(v) && v >= 1 && v <= 7) vals.push(v);
+                  });
+                  const st = computeNumericStats(vals);
+                  return `
+                    <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3 space-y-2">
+                      <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-slate-700">${sub.title}</span>
+                        <span class="text-xs font-bold text-hku-blue">Mean: ${st.mean} (SD: ${st.sd})</span>
+                      </div>
+                      <div class="grid grid-cols-7 gap-1 text-center">
+                        ${[1,2,3,4,5,6,7].map(n => {
+                          const c = vals.filter(x => x === n).length;
+                          return `<div class="bg-white border border-slate-200 rounded py-1"><div class="text-[10px] text-slate-400">${n}</div><div class="text-xs font-bold text-slate-700">${c}</div></div>`;
+                        }).join('')}
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `;
+          }
+          else if (q.type === 'audio_comparison') {
+            badgeText = 'A/B 版本比較';
+            const compItems = [
+              { key: 'natural', title: '較自然版本' },
+              { key: 'intelligible', title: '較易理解歌詞' },
+              { key: 'fit', title: '歌詞與旋律較配合' },
+              { key: 'professional', title: '較像專業粵語流行曲' }
+            ];
+            bodyHtml = `
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                ${compItems.map(ci => {
+                  const counts = { 'A': 0, 'B': 0, '沒有明顯差異': 0 };
+                  let tot = 0;
+                  responsesDatabase.forEach(r => {
+                    const v = getAnswerValueForQuestion(r, `${q.id}_${ci.key}`);
+                    if (v) {
+                      counts[v] = (counts[v] || 0) + 1;
+                      tot++;
+                    }
+                  });
+                  return `
+                    <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3 space-y-2">
+                      <div class="text-xs font-bold text-slate-700">${ci.title}</div>
+                      ${renderDistributionBars(['A', 'B', '沒有明顯差異'], counts, tot)}
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `;
+          }
+          else if (q.type === 'audio_multiple_choice') {
+            badgeText = q.isMatch !== false ? '歌詞辨認 (Match)' : '歌詞辨認 (Mismatch)';
+            const counts = {};
+            let tot = 0;
+            let correctCnt = 0;
+            responsesDatabase.forEach(r => {
+              const v = getAnswerValueForQuestion(r, q.id);
+              if (v) {
+                counts[v] = (counts[v] || 0) + 1;
+                tot++;
+                if (q.correctAnswer && v === q.correctAnswer) correctCnt++;
+              }
+            });
+            const acc = tot > 0 ? ((correctCnt / tot) * 100).toFixed(1) : '0.0';
+            bodyHtml = `
+              ${q.correctAnswer ? `
+                <div class="mb-3 flex flex-wrap items-center gap-2 text-xs">
+                  <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg font-bold">辨認正確率：${acc}% (${correctCnt}/${tot})</span>
+                  <span class="text-slate-500">預設正確答案：<strong>${escapeHtml(q.correctAnswer)}</strong></span>
+                </div>
+              ` : ''}
+              ${renderDistributionBars(q.options || [], counts, tot, q.correctAnswer)}
+            `;
+          }
+          else if (q.type === 'short_text' || q.type === 'open_text') {
+            badgeText = q.type === 'short_text' ? '簡答題' : '開放式詳答';
+            const answers = [];
+            responsesDatabase.forEach((r, rIdx) => {
+              const v = getAnswerValueForQuestion(r, q.id);
+              if (v && String(v).trim() !== '') {
+                answers.push({ idx: rIdx + 1, text: String(v).trim() });
+              }
+            });
+            bodyHtml = answers.length === 0
+              ? `<p class="text-xs text-slate-400">尚無文字回答。</p>`
+              : `
+                <div class="text-xs text-slate-500 mb-2">有效文字回答數：<strong class="text-slate-700">${answers.length}</strong> 筆</div>
+                <div class="max-h-44 overflow-y-auto space-y-1.5 pr-1">
+                  ${answers.map(a => `
+                    <div class="bg-slate-50 border border-slate-200/80 rounded-lg px-3 py-2 text-xs text-slate-700 flex items-start gap-2">
+                      <span class="font-mono text-[10px] font-bold px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded flex-shrink-0">#${a.idx}</span>
+                      <span>${escapeHtml(a.text)}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              `;
+          }
+
+          return `
+            <div class="border border-slate-200 rounded-xl p-4 bg-white space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                <h4 class="font-bold text-slate-800 text-sm">${escapeHtml(q.label)}</h4>
+                <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[11px] font-semibold">${badgeText}</span>
+              </div>
+              <div>${bodyHtml}</div>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="border border-slate-200/90 rounded-2xl overflow-hidden bg-slate-50/40">
+            <div class="bg-hku-navy/5 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+              <span class="font-bold text-hku-navy text-sm">${escapeHtml(sec.title || `部分 ${sIdx + 1}`)}</span>
+              <span class="text-xs text-slate-500">共 ${sec.questions.length} 題</span>
+            </div>
+            <div class="p-4 space-y-4">
+              ${questionsHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderQualitativeTable(data) {
+      const tbody = document.getElementById('qualitative-table-body');
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-slate-400">尚無相關記錄。</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = data.map((r, idx) => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="px-4 py-3 font-mono font-bold text-slate-500">${idx + 1}</td>
+          <td class="px-4 py-3">
+            <span class="font-semibold text-slate-800">${escapeHtml(r.age)} / ${escapeHtml(r.gender)}</span><br>
+            <span class="text-slate-400">母語: ${escapeHtml(r.native_language)}</span>
+          </td>
+          <td class="px-4 py-3 max-w-xs text-slate-700">${escapeHtml(r.part7_open?.q1_characteristics || '無')}</td>
+          <td class="px-4 py-3 max-w-xs text-slate-700">${escapeHtml(r.part7_open?.q2_unnatural_notes || '無')}</td>
+          <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">${escapeHtml(r.part7_open?.priority || '未選擇')}</span></td>
+          <td class="px-4 py-3 max-w-xs text-slate-600">
+            <div>${escapeHtml(r.part7_open?.priority_reason || '無')}</div>
+            <button type="button" onclick="inspectResponseDetail(${idx})" class="mt-1.5 text-[11px] font-semibold text-hku-blue hover:underline flex items-center gap-1">
+              <i data-lucide="eye" class="w-3 h-3"></i> 查看完整作答明細
+            </button>
+          </td>
+        </tr>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function inspectResponseDetail(idx) {
+      const r = responsesDatabase[idx];
+      if (!r) return;
+      const raw = r.raw_answers || {};
+      const lines = Object.keys(raw).length > 0
+        ? Object.entries(raw).map(([k, v]) => `• ${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('\n')
+        : JSON.stringify(r, null, 2);
+      openConfirmModal(`受訪者 #${idx + 1} 完整作答記錄（提交時間：${new Date(r.timestamp).toLocaleString()}）：\n\n${lines.slice(0, 700)}${lines.length > 700 ? '\n...(更多詳情請匯出 CSV/JSON 查看)' : ''}`, () => {});
+    }
+
+    function filterQualitativeTable() {
+      const q = document.getElementById('feedback-search').value.toLowerCase();
+      const filtered = responsesDatabase.filter(r =>
+        (r.part7_open?.q1_characteristics || '').toLowerCase().includes(q) ||
+        (r.part7_open?.q2_unnatural_notes || '').toLowerCase().includes(q) ||
+        (r.part7_open?.priority_reason || '').toLowerCase().includes(q)
+      );
+      renderQualitativeTable(filtered);
+    }
+
+    // ================= 8. HELPERS =================
+    function getRadioValue(name) {
+      const el = document.querySelector(`input[name="${name}"]:checked`);
+      return el ? el.value : null;
+    }
+    function setRadioValue(name, val) {
+      const radios = document.querySelectorAll(`input[name="${name}"]`);
+      radios.forEach(r => { if (r.value == val) r.checked = true; });
+    }
+    function showError(msg) {
+      document.getElementById('error-message').textContent = msg;
+      document.getElementById('error-banner').classList.remove('hidden');
+    }
+    function hideError() {
+      document.getElementById('error-banner').classList.add('hidden');
+    }
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    let toastTimer = null;
+    function showToast(msg) {
+      const box = document.getElementById('toast-box');
+      document.getElementById('toast-message').textContent = msg;
+      box.classList.remove('hidden');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => box.classList.add('hidden'), 3500);
+    }
+    let pendingConfirmCallback = null;
+    function openConfirmModal(text, onConfirm) {
+      document.getElementById('confirm-modal-text').textContent = text;
+      pendingConfirmCallback = onConfirm;
+      document.getElementById('confirm-modal').classList.remove('hidden');
+    }
+    function closeConfirmModal() {
+      document.getElementById('confirm-modal').classList.add('hidden');
+      pendingConfirmCallback = null;
+    }
+    document.getElementById('confirm-modal-ok').onclick = function() {
+      if (pendingConfirmCallback) pendingConfirmCallback();
+      closeConfirmModal();
+    };
+
+    // Init
+    window.onload = function() {
+      applySurveyMetaToDOM();
+      updateAdminUIState();
+      updateResponseBadgeCount();
+      renderSurveyCurrentStep();
+      checkUrlParameters();
+      lucide.createIcons();
+    };
+  </script>
+</body>
+</html>
